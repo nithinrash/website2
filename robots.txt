@@ -1,4 +1,4 @@
-# KineBlox - Robots.txt
+# kineBlox - Robots.txt
 # Allow all search engines to crawl everything
 
 User-agent: *
