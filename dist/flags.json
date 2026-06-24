@@ -1,0 +1,128 @@
+{
+  "qas": [
+    {
+      "key": "Game Board",
+      "question": "What is the classic board game with numbered spaces?",
+      "answer": "Chutes Ladders"
+    },
+    {
+      "key": "Player Pieces",
+      "question": "What are the small tokens used to represent players in a game?",
+      "answer": "Game Tokens"
+    },
+    {
+      "key": "War Strategy",
+      "question": "What is the key element in winning games like Risk?",
+      "answer": "Military Tactics"
+    },
+    {
+      "key": "Board Shape",
+      "question": "What is the common shape of a Scrabble game board?",
+      "answer": "Square Grid"
+    },
+    {
+      "key": "Card Decks",
+      "question": "What are the small paper items used in games like Poker?",
+      "answer": "Playing Cards"
+    },
+    {
+      "key": "Monopoly Guide",
+      "question": "What is the book that outlines how to play Monopoly?",
+      "answer": "Instruction Manual"
+    },
+    {
+      "key": "Chess Opponent",
+      "question": "How many people can play the game of Chess?",
+      "answer": "Two People"
+    },
+    {
+      "key": "Dice Roller",
+      "question": "What is the small object used to determine movement in Backgammon?",
+      "answer": "Six Sided"
+    },
+    {
+      "key": "Complex Play",
+      "question": "What is the modern style of board game with complex rules?",
+      "answer": "Euro Games"
+    },
+    {
+      "key": "Score Tokens",
+      "question": "What are the small items used to keep track of score in Carcassonne?",
+      "answer": "Wooden Markers"
+    },
+    {
+      "key": "Galactic Wars",
+      "question": "What is the key element in winning games like Star Wars?",
+      "answer": "Space Battles"
+    },
+    {
+      "key": "Grid Pattern",
+      "question": "What is the pattern of lines on a Chess board?",
+      "answer": "Checkered"
+    },
+    {
+      "key": "Magic Pack",
+      "question": "What is the collection of cards used in a game of Magic?",
+      "answer": "Card Collection"
+    },
+    {
+      "key": "Game Guide",
+      "question": "What is the document that outlines how to play Clue?",
+      "answer": "Rule Book"
+    },
+    {
+      "key": "Team Play",
+      "question": "How many groups of people can play the game of Pictionary?",
+      "answer": "Two Teams"
+    },
+    {
+      "key": "Seed Movement",
+      "question": "What is the mechanism used to move pieces in a game of Mancala?",
+      "answer": "Stone Dropping"
+    }
+  ],
+  "innerOrder": [
+    "Game Board",
+    "Player Pieces",
+    "War Strategy",
+    "Board Shape",
+    "Card Decks",
+    "Monopoly Guide",
+    "Chess Opponent",
+    "Dice Roller",
+    "Complex Play",
+    "Score Tokens",
+    "Galactic Wars",
+    "Grid Pattern",
+    "Magic Pack",
+    "Game Guide",
+    "Team Play",
+    "Seed Movement"
+  ],
+  "outerFlags": [
+    "Game Tokens",
+    "Space Battles",
+    "Checkered",
+    "Playing Cards",
+    "Instruction Manual",
+    "Two People",
+    "Six Sided",
+    "Euro Games",
+    "Chess Pieces",
+    "Naval Warfare",
+    "Square Grid",
+    "Tarot Cards",
+    "Quick Guide",
+    "Two Teams",
+    "Eight Sided",
+    "Chutes Ladders",
+    "Wooden Markers",
+    "Military Tactics",
+    "Circular Board",
+    "Card Collection",
+    "Rule Book",
+    "Three Players",
+    "Stone Dropping",
+    "Candy Land"
+  ]
+}

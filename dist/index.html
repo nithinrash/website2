@@ -1,0 +1,360 @@
+
+
+    <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1565C0">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+    <title>GearQuiz</title>
+  <script type="module" crossorigin src="/dist/assets/index-C8trA8UR.js"></script>
+  <link rel="stylesheet" crossorigin href="/dist/assets/index-BaGmLK5p.css">
+</head>
+
+<body class="bg-gray-100 overflow-hidden select-none m-0 p-0 font-['Inter']">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <img src="/assets/loading-bd5Dci_y.gif" alt="Loading..." class="w-24 h-24 mb-4">
+        <div class="text-white text-xl font-bold tracking-widest animate-pulse">LOADING</div>
+    </div>
+
+    <!-- Auth / Login Button (Top Right Profile only - Login moved to Home) -->
+    <div id="auth-container" class="absolute top-4 right-4 z-50 pointer-events-auto">
+        <div id="user-profile"
+            class="hidden flex items-center gap-2 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-lg border border-blue-100 animate-fade-in-up">
+            <img id="user-avatar" src="" alt="User" class="w-8 h-8 rounded-full border border-gray-200">
+            <div class="text-xs text-left">
+                <div id="user-name" class="font-bold text-gray-800 truncate max-w-[100px]"></div>
+                <button id="logout-btn" class="text-red-500 hover:underline">Sign out</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- HOME SCREEN OVERLAY -->
+    <div id="home-screen" class="fixed inset-0 z-40 flex flex-col items-center justify-center text-center p-6">
+        <!-- Logo / Title -->
+        <div class="mb-8 animate-fade-in-up">
+            <div class="text-6xl mb-2 animate-float">🎡</div>
+            <h1 class="text-5xl font-black text-white drop-shadow-lg tracking-tight">GearQuiz</h1>
+            <p class="text-blue-100 text-lg font-medium mt-2 tracking-wide">Spin. Solve. Learn.</p>
+        </div>
+
+        <!-- Login Section -->
+        <div class="space-y-4 animate-fade-in-up delay-200">
+            <button id="login-btn"
+                class="group relative bg-white text-blue-900 font-bold py-4 px-8 rounded-2xl shadow-2xl hover:shadow-xl hover:scale-105 transition-all duration-300 border-b-4 border-blue-200 active:border-b-0 active:translate-y-1">
+                <div class="flex items-center gap-3">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-6 h-6" alt="G">
+                    <span class="text-lg">Sign in with Google</span>
+                </div>
+                <div
+                    class="absolute inset-0 rounded-2xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                </div>
+            </button>
+
+            <!-- Login with ID Handler -->
+            <div id="id-login-container" class="space-y-3">
+                <button id="id-login-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 flex items-center justify-center gap-2 group">
+                    <span>👤</span>
+                    <span>Login with ID</span>
+                </button>
+
+                <div id="id-input-group" class="hidden animate-fade-in-up">
+                    <div class="flex gap-2">
+                        <input type="text" id="custom-id-input"
+                            class="flex-1 bg-white/90 border-2 border-blue-300 rounded-xl px-4 py-3 text-blue-900 font-bold placeholder-blue-300 focus:outline-none focus:border-blue-500"
+                            placeholder="Enter Name..." maxlength="12">
+                        <button id="id-submit-btn"
+                            class="bg-green-500 hover:bg-green-600 text-white font-bold px-6 rounded-xl border-b-4 border-green-700 active:border-b-0 active:translate-y-1">
+                            GO
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guest Login (touch-action:manipulation fixes Safari iOS tap issues) -->
+            <button id="guest-btn"
+                class="w-full bg-white/10 hover:bg-white/20 text-blue-100 font-bold py-3 rounded-2xl transition-all border border-white/30 hover:border-white/50"
+                style="touch-action: manipulation; -webkit-tap-highlight-color: transparent; cursor: pointer;">
+                Play as Guest (No Leaderboard)
+            </button>
+        </div>
+
+
+
+        <!-- Mode Selection Section (Hidden by default) -->
+        <div id="mode-selection" class="hidden space-y-4 animate-fade-in-up delay-200">
+            <h2 class="text-white text-xl font-bold mb-6 opacity-90">Select Game</h2>
+
+            <div
+                class="flex flex-col md:flex-row items-center gap-6 md:gap-8 min-w-[300px] md:min-w-[600px] justify-center">
+                <button id="quick-play-btn"
+                    class="w-48 bg-gradient-to-r from-green-400 to-green-600 text-white font-black py-4 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-green-700 active:border-b-0 active:translate-y-1 relative z-10"
+                    style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
+                    QUICK PLAY 🟢
+                </button>
+
+                <!-- Central Spinning Gear -->
+                <div class="text-5xl md:text-6xl text-white/80 animate-spin-alternating z-0 pointer-events-none">
+                    ⚙️
+                </div>
+
+                <button id="quick-fire-btn"
+                    class="w-48 bg-gradient-to-r from-orange-400 to-red-600 text-white font-black py-4 rounded-xl shadow-lg transform hover:scale-105 transition-all border-b-4 border-red-700 active:border-b-0 active:translate-y-1 relative z-10"
+                    style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;">
+                    QUICK FIRE 🔥
+                </button>
+            </div>
+
+            <!-- Leaderboard Podium -->
+            <div id="leaderboard-section"
+                class="mt-8 w-full flex flex-col items-center animate-fade-in-up delay-300 hidden">
+                <div id="leaderboard-podium" class="flex items-end gap-2 md:gap-4 pb-2">
+                    <!-- 2nd Place (Silver) -->
+                    <!-- 1st Place (Gold) -->
+                    <!-- 3rd Place (Bronze) -->
+                    <div class="text-white/50 text-xs italic">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Fire Selection Hint -->
+    <div id="selection-hint"
+        class="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-black/60 text-white px-6 py-3 rounded-full backdrop-blur-md border border-white/20 shadow-xl hidden animate-pulse">
+        <p class="font-bold text-lg">Select 3 Questions via Gear ⚙️</p>
+        <p class="text-xs text-center opacity-80">Use Arrows to Rotate, Enter to Pick</p>
+    </div>
+
+    <!-- Main Game Container -->
+    <div id="game-container" class="relative w-full h-full bg-gradient-to-b from-[#1E88E5] to-[#1565C0]">
+
+        <div id="stopwatch"
+            class="fixed bottom-16 left-1/2 -translate-x-1/2 z-30 font-mono text-white text-3xl font-black drop-shadow-md hidden md:hidden">
+            00:00.0
+        </div>
+
+        <div id="background-decor" class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        </div>
+
+        <canvas id="gameCanvas" class="absolute inset-0 z-10"></canvas>
+
+        <div id="ui-layer" class="absolute inset-0 z-20 pointer-events-none">
+            <div id="flags-container" class="absolute inset-0 w-full h-full transition-opacity duration-500"
+                style="opacity: 0;">
+            </div>
+
+            <div id="selection-box" class="absolute z-50"></div>
+
+            <div id="hint-box" class="absolute top-20 left-1/2 -translate-x-1/2 pointer-events-none"></div>
+        </div>
+
+        <div id="overlay-container" class="fixed inset-0 z-50 bg-[#1565C0]/90 flex items-center justify-center">
+            <div class="text-center transform -translate-y-12">
+                <div id="overlay-emoji" class="text-9xl mb-4">👏</div>
+                <div id="overlay-msg" class="text-6xl font-black text-white tracking-widest mb-8">CORRECT</div>
+
+                <div id="overlay-details"
+                    class="bg-gradient-to-b from-white/95 to-[#E3F2FD]/90 border-4 border-white/75 rounded-3xl p-6 shadow-2xl max-w-2xl mx-auto text-left hidden">
+                    <div class="mb-4">
+                        <div class="text-[#0D47A1] text-sm font-bold uppercase">Question</div>
+                        <div id="overlay-q" class="text-[#072B4F] text-xl font-semibold mt-1"></div>
+                    </div>
+                    <div>
+                        <div class="text-[#1B5E20] text-sm font-bold uppercase">Answer</div>
+                        <div id="overlay-a" class="text-[#2E7D32] text-2xl font-black mt-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Instructions Overlay - Step 1: Rotation -->
+        <div id="instruction-step-1"
+            class="fixed inset-0 z-[55] flex flex-col items-center justify-center pointer-events-auto hidden">
+            <!-- Main instruction box (centered) -->
+            <div
+                class="bg-black/60 backdrop-blur-md text-white px-8 py-6 rounded-2xl border border-white/30 shadow-2xl text-center max-w-md mx-4 animate-fade-in-up">
+                <p id="instruction-text-desktop" class="text-lg font-semibold leading-relaxed">
+                    Spin the gear using keyboard <kbd
+                        class="inline-block px-2 py-1 mx-1 bg-gray-700 border border-gray-500 rounded shadow-md text-yellow-300 font-bold text-sm">◀</kbd><kbd
+                        class="inline-block px-2 py-1 mx-1 bg-gray-700 border border-gray-500 rounded shadow-md text-yellow-300 font-bold text-sm">▶</kbd>
+                    keys, or click the gear and drag your cursor in a circular motion to spin gear.
+                </p>
+                <p id="instruction-text-mobile" class="text-lg font-semibold leading-relaxed hidden">
+                    Touch the gear and drag in a circular motion to spin gear.
+                </p>
+                <p class="text-sm text-white/60 mt-4">Tap anywhere to continue</p>
+            </div>
+        </div>
+
+        <!-- Game Instructions Overlay - Step 2: Selection -->
+        <div id="instruction-step-2"
+            class="fixed inset-0 z-[55] flex flex-col items-center justify-center pointer-events-auto hidden">
+
+            <!-- Arrow pointing to question panel at top -->
+            <div class="absolute top-28 left-1/2 -translate-x-1/2 flex flex-col items-center">
+                <div
+                    class="bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-xl border border-white/30 text-sm font-medium mb-2">
+                    ↑ Full question appears here
+                </div>
+                <div class="text-2xl animate-bounce text-yellow-300">▲</div>
+            </div>
+
+            <!-- Selection box instruction (positioned on LEFT side, not blocking selection box) -->
+            <div class="absolute left-4 md:left-[calc(50%-320px)] top-1/2 -translate-y-1/2 flex flex-row items-center">
+                <!-- Arrow pointing right to selection box -->
+                <div class="text-4xl animate-pulse text-blue-400 mr-3">→</div>
+                <div
+                    class="bg-black/70 backdrop-blur-sm text-white px-5 py-3 rounded-xl border border-blue-400/50 text-center max-w-xs">
+                    <p class="text-sm font-medium text-blue-300 mb-1">Selection Box →</p>
+                    <p class="text-xs text-white/90">The question in this box is your current choice</p>
+                    <p id="selection-instruction-desktop" class="text-xs text-green-300 mt-2">
+                        Press <kbd class="px-1 bg-gray-700 border border-gray-500 rounded text-xs">Enter</kbd> or <span
+                            class="text-yellow-300">click</span> the box to select
+                    </p>
+                    <p id="selection-instruction-mobile" class="text-xs text-green-300 mt-2 hidden">
+                        <span class="text-yellow-300">Tap</span> the box to select this question
+                    </p>
+                    <p class="text-sm text-white/60 mt-3">Tap anywhere to continue</p>
+                </div>
+            </div>
+
+            <!-- Animated arrow pointing at the selection box -->
+            <div id="selection-box-highlight"
+                class="absolute right-[calc(50%-100px)] md:right-[calc(50%-120px)] top-1/2 -translate-y-1/2 pointer-events-none text-5xl md:text-6xl text-blue-400"
+                style="animation: pulse-arrow 1.5s ease-in-out infinite;">
+                ➜
+            </div>
+        </div>
+
+        <style>
+            @keyframes pulse-arrow {
+
+                0%,
+                100% {
+                    color: rgba(96, 165, 250, 0.5);
+                    transform: translateY(-50%) translateX(0);
+                    text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+                }
+
+                50% {
+                    color: rgba(96, 165, 250, 1);
+                    transform: translateY(-50%) translateX(5px);
+                    text-shadow: 0 0 25px rgba(96, 165, 250, 0.8);
+                }
+            }
+        </style>
+
+        <!-- Game Instructions Overlay - Step 3: Answer Phase (both gears visible) -->
+        <div id="instruction-step-3"
+            class="fixed inset-0 z-[55] flex items-center justify-center pointer-events-auto hidden">
+            <div
+                class="bg-black/60 backdrop-blur-md text-white px-8 py-6 rounded-2xl border border-white/30 shadow-2xl text-center max-w-md mx-4 animate-fade-in-up">
+                <p class="text-xl font-bold text-yellow-300 mb-4">🎯 Answer Phase</p>
+
+                <!-- Desktop instructions -->
+                <div id="answer-instruction-desktop" class="space-y-3 text-left">
+                    <p class="text-sm">
+                        <span class="text-yellow-300 font-bold">1.</span> Spin the gear using <kbd
+                            class="px-1 bg-gray-700 border border-gray-500 rounded text-xs">◀</kbd><kbd
+                            class="px-1 bg-gray-700 border border-gray-500 rounded text-xs">▶</kbd> to see all options
+                    </p>
+                    <p class="text-sm">
+                        <span class="text-yellow-300 font-bold">2.</span> Align the correct answer with the selection
+                        box
+                    </p>
+                    <p class="text-sm">
+                        <span class="text-yellow-300 font-bold">3.</span> Press <kbd
+                            class="px-1 bg-gray-700 border border-gray-500 rounded text-xs">Enter</kbd> or <span
+                            class="text-green-300">click</span> to submit your answer
+                    </p>
+                    <p class="text-sm text-orange-300">
+                        ⚠️ You have <span class="font-bold">max 2 attempts</span> per question
+                    </p>
+                    <p class="text-xs text-white/70 mt-2">
+                        Press <kbd class="px-1 bg-gray-700 border border-gray-500 rounded text-xs">ESC</kbd> or <span
+                            class="text-yellow-300">long-click</span> to return to question menu
+                    </p>
+                </div>
+
+                <!-- Mobile instructions -->
+                <div id="answer-instruction-mobile" class="space-y-3 text-left hidden">
+                    <p class="text-sm">
+                        <span class="text-yellow-300 font-bold">1.</span> Touch and drag the gear to see all options
+                    </p>
+                    <p class="text-sm">
+                        <span class="text-yellow-300 font-bold">2.</span> Align the correct answer with the selection
+                        box
+                    </p>
+                    <p class="text-sm">
+                        <span class="text-yellow-300 font-bold">3.</span> <span class="text-green-300">Tap</span> to
+                        submit your answer
+                    </p>
+                    <p class="text-sm text-orange-300">
+                        ⚠️ You have <span class="font-bold">max 2 attempts</span> per question
+                    </p>
+                    <p class="text-xs text-white/70 mt-2">
+                        <span class="text-yellow-300">Long-press</span> to return to question menu
+                    </p>
+                </div>
+
+                <p class="text-sm text-white/60 mt-4">Tap anywhere to continue</p>
+            </div>
+        </div>
+        <div class="absolute top-[20px] left-4 max-w-[38%] md:max-w-none md:left-1/2 md:-translate-x-1/2 p-4 rounded-2xl shadow-lg question-panel pointer-events-none transition-opacity duration-500 flex flex-col items-start md:items-center justify-center text-left md:text-center z-30"
+            id="q-panel">
+            <div id="q-text" class="text-[#072B4F] text-lg font-semibold leading-tight">Rotate wheel...</div>
+            <div id="a-text" class="text-[#0D47A1] text-2xl font-bold mt-2 hidden"></div>
+        </div>
+
+        <div id="score-panel" class="absolute top-16 right-6 hidden pointer-events-none flex flex-col gap-2 items-end">
+            <!-- Normal Mode: Correct / Wrong Counters -->
+            <div id="cw-counters" class="flex gap-2 hidden">
+                <div
+                    class="bg-gradient-to-r from-green-500 to-green-600 border-0 md:border-2 border-green-800 rounded-xl shadow-lg px-4 py-2 text-center min-w-[80px]">
+                    <div class="text-green-100 text-[10px] font-black tracking-widest uppercase">Correct</div>
+                    <div id="correct-count" class="text-white text-2xl font-black">0</div>
+                </div>
+                <div
+                    class="bg-gradient-to-r from-red-500 to-red-600 border-0 md:border-2 border-red-800 rounded-xl shadow-lg px-4 py-2 text-center min-w-[80px]">
+                    <div class="text-red-100 text-[10px] font-black tracking-widest uppercase">Wrong</div>
+                    <div id="wrong-count" class="text-white text-2xl font-black">0</div>
+                </div>
+            </div>
+
+            <!-- Quick Fire Mode: Score / Total -->
+            <div id="qf-score"
+                class="hidden bg-gradient-to-r from-[#FF6B6B] to-[#FF5252] border-4 border-[#8B0000] rounded-2xl shadow-xl px-6 py-3 text-center">
+                <div class="text-[#FFF59D] text-xs font-black tracking-widest uppercase">Score</div>
+                <div id="score-display" class="text-white text-3xl font-black">0/0</div>
+            </div>
+
+            <!-- History List (Normal Mode) -->
+            <div id="history-list" class="mt-4 hidden md:flex flex-col gap-2 items-end w-full">
+                <!-- Items injected via JS -->
+            </div>
+        </div>
+
+        <div id="mobile-history-grid"
+            class="fixed bottom-4 left-0 right-0 z-20 px-4 grid gap-1 justify-center pointer-events-none transition-all duration-300 md:hidden">
+            <!-- JS injects pills here -->
+        </div>
+
+        <!-- MAIN SCRIPT -->
+
+</body>
+
+</html>
+
+

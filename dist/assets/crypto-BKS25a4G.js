@@ -1,0 +1,1 @@
+const o="HURUP_SECURE_KEY_v1";function c(n){try{const t=atob(n);let r="";for(let e=0;e<t.length;e++)r+=String.fromCharCode(t.charCodeAt(e)^o.charCodeAt(e%o.length));return r}catch(t){return console.error("Decryption failed:",t),null}}export{c as decrypt};

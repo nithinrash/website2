@@ -1,0 +1,1512 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>QnaGen</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js"></script>
+
+    <style>
+        /* Custom Styles to augment Bootstrap */
+        :root {
+            --brand-color: #f55036;
+            /* Groq Orange */
+        }
+
+        body {
+            height: 90vh;
+            height: 90dvh;
+            overflow: hidden;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            /* App-like feel */
+        }
+
+        /* Chat Container Scrollbar */
+        #main-container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100%;
+        }
+
+        #chat-scroll-area {
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #adb5bd;
+            border-radius: 4px;
+        }
+
+        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: #495057;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: var(--bs-tertiary-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        /* Game Overlay Specifics */
+        #game-overlay {
+            background-color: #0f172a;
+            /* Slate 900 */
+        }
+
+        #gameCanvas {
+            touch-action: none;
+        }
+
+        /* Message Bubbles */
+        .msg-user {
+            background-color: var(--bs-secondary-bg);
+            border: 1px solid var(--bs-border-color);
+            border-radius: 1rem;
+            border-top-left-radius: 0;
+            padding: 1rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Flag Pill Styles from main game */
+        .flag-pill {
+            position: absolute;
+            background: linear-gradient(to bottom, #FFFFFF, #F6FAFF);
+            border: 3px solid rgba(13, 71, 161, 0.85);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            transform-origin: center center;
+            z-index: 20;
+            font-size: 10px !important;
+            font-weight: 700;
+            color: #0B2A6E;
+        }
+
+        /* Camera Overlay */
+        #camera-overlay {
+            background-color: #000;
+        }
+
+        #camera-overlay video {
+            object-fit: cover;
+        }
+
+        .cam-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            transition: transform 0.15s, opacity 0.15s;
+        }
+
+        .cam-btn:active {
+            transform: scale(0.9);
+        }
+
+        .cam-shutter {
+            width: 72px;
+            height: 72px;
+            background: #fff;
+            border: 4px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2);
+        }
+
+        .cam-shutter:active {
+            background: #ccc;
+        }
+    </style>
+</head>
+
+<body class="bg-body">
+
+    <div id="main-container" class="container-md p-0 h-100 max-w-lg mx-auto">
+
+        <header class="border-bottom bg-body z-3 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-cpu-fill fs-4" style="color: var(--brand-color);"></i>
+                    <div>
+                        <h1 class="h6 mb-0 fw-bold">Hurup Generator v2.9</h1>
+                        <span class="badge bg-warning text-dark bg-opacity-25 border border-warning border-opacity-25"
+                            id="model-badge">Initializing...</span>
+                    </div>
+                </div>
+                <button id="btn-theme" class="btn btn-outline-secondary btn-sm" title="Toggle Theme">
+                    <i class="bi bi-sun-fill d-none d-dark-inline"></i>
+                    <i class="bi bi-moon-stars-fill d-inline d-dark-none"></i>
+                </button>
+                <button id="btn-clear-storage" class="btn btn-outline-danger btn-sm ms-2"
+                    title="Clear Game Logic Override">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </header>
+
+        <script>
+            document.getElementById('btn-clear-storage').onclick = () => {
+                const currentPort = window.location.port;
+                if (currentPort === '5173') {
+                    if (confirm('Clear saved custom game data?')) {
+                        localStorage.removeItem('HURUP_DEV_OVERRIDE_DATA');
+                        alert('Cleared! Reload index.html to see defaults.');
+                        window.location.reload();
+                    }
+                } else {
+                    alert('Opening main game to clear data...');
+                    window.open('http://localhost:5173#clear', '_blank');
+                }
+            };
+        </script>
+
+        <main id="chat-scroll-area" class="p-3">
+            <div id="chat" class="d-flex flex-column gap-4">
+            </div>
+        </main>
+
+        <footer class="p-3 border-top bg-body z-3"
+            style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;">
+            <div id="image-preview-container" class="mb-2 d-none d-flex gap-2 align-items-center flex-wrap"
+                style="max-height: 120px; overflow-y: auto;">
+            </div>
+
+            <div class="card shadow-sm border-secondary-subtle">
+                <div class="card-body p-2 d-flex gap-2">
+                    <input type="file" id="file-input" accept="image/*,application/pdf" class="d-none" multiple>
+
+                    <button id="btn-attach"
+                        class="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                        title="Attach Image or PDF">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+
+                    <button id="btn-camera"
+                        class="btn btn-outline-secondary d-flex align-items-center justify-content-center"
+                        title="Open Camera">
+                        <i class="bi bi-camera-fill"></i>
+                    </button>
+
+                    <textarea id="input" rows="1" class="form-control border-0 shadow-none" style="resize: none;"
+                        placeholder='Type a topic'></textarea>
+
+                    <button id="btn-send" class="btn btn-primary d-flex align-items-center gap-2 px-4">
+                        <i class="bi bi-send-fill"></i>
+                        <span class="d-none d-sm-inline">Send</span>
+                    </button>
+                </div>
+                <div class="card-footer py-1 bg-transparent border-0 text-muted small">
+                    Enter to send &middot; Shift+Enter for new line
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="game-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none z-3 text-white">
+        <button onclick="closeGame()"
+            class="position-absolute top-0 end-0 m-4 btn btn-light rounded-circle p-2 z-3 opacity-75">
+            <i class="bi bi-x-lg fs-4"></i>
+        </button>
+
+        <div class="position-relative w-100 h-100 overflow-hidden">
+            <canvas id="gameCanvas" class="position-absolute top-0 start-0 w-100 h-100 z-1 cursor-grab"></canvas>
+
+            <div id="game-ui-layer" class="position-absolute top-0 start-0 w-100 h-100 z-2 pe-none user-select-none">
+                <div id="game-flags-container" class="position-absolute w-100 h-100 opacity-0 transition-opacity"></div>
+
+                <div id="game-selection-box"
+                    class="position-absolute border border-2 rounded-pill shadow-lg d-none transition-all"
+                    style="backdrop-filter: blur(0px); background: rgba(255, 255, 255, 0.067); border-color: rgba(255, 255, 255, 0.6);">
+                </div>
+
+                <div class="position-absolute top-0 start-0 m-3 p-3 rounded bg-white bg-opacity-75 backdrop-blur border text-dark shadow pe-auto"
+                    style="max-width: 320px;" id="game-q-panel">
+                    <div id="game-q-text" class="fw-bold small mb-2">Drag wheel to spin...</div>
+                    <div id="game-a-text" class="small text-success fw-semibold" style="display: none;">
+                        <span class="text-muted">Answer:</span> <span id="game-a-value"></span>
+                    </div>
+                </div>
+
+                <div id="game-hint-box"
+                    class="position-absolute bottom-0 start-50 translate-middle-x mb-5 pe-auto transition-opacity">
+                    <div class="badge rounded-pill bg-primary px-4 py-2 shadow border border-white border-opacity-50">
+                        DRAG TO ROTATE • 'S' TO SELECT
+                    </div>
+                </div>
+
+                <div id="game-result-overlay"
+                    class="position-fixed top-0 start-0 w-100 h-100 bg-primary bg-opacity-75 d-flex align-items-center justify-content-center d-none transition-opacity">
+                    <div class="text-center">
+                        <div id="game-res-emoji" class="display-1 mb-3"></div>
+                        <div id="game-res-msg" class="display-3 fw-bold text-white tracking-widest"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Overlay -->
+    <div id="camera-overlay" class="position-fixed top-0 start-0 w-100 h-100 d-none z-3">
+        <video id="camera-video" class="position-absolute top-0 start-0 w-100 h-100" autoplay playsinline muted></video>
+
+        <!-- Top bar -->
+        <div class="position-absolute top-0 start-0 w-100 d-flex justify-content-between align-items-center p-3 z-3">
+            <button id="cam-close" class="cam-btn bg-dark bg-opacity-50 text-white">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <button id="cam-flash" class="cam-btn bg-dark bg-opacity-50 text-white" title="Toggle Flash">
+                <i class="bi bi-lightning"></i>
+            </button>
+        </div>
+
+        <!-- Bottom bar -->
+        <div
+            class="position-absolute bottom-0 start-0 w-100 d-flex justify-content-center align-items-center gap-5 pb-5 z-3">
+            <button id="cam-flip" class="cam-btn bg-dark bg-opacity-50 text-white" title="Switch Camera">
+                <i class="bi bi-arrow-repeat"></i>
+            </button>
+            <button id="cam-shutter" class="cam-btn cam-shutter" title="Capture"></button>
+            <div style="width: 56px;"></div> <!-- spacer -->
+        </div>
+    </div>
+
+    <template id="tpl-user">
+        <div class="d-flex gap-3 fade-in-up">
+            <div class="flex-shrink-0">
+                <div class="ratio ratio-1x1 rounded-circle bg-secondary-subtle border d-flex align-items-center justify-content-center"
+                    style="width: 32px;">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+            </div>
+            <div class="flex-grow-1">
+                <div class="msg-user">
+                    <div class="msg-content text-break"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-assistant-table">
+        <div class="d-flex gap-3 fade-in-up">
+            <div class="flex-shrink-0">
+                <div class="ratio ratio-1x1 rounded-circle bg-body border d-flex align-items-center justify-content-center"
+                    style="width: 32px; color: var(--brand-color);">
+                    <i class="bi bi-robot"></i>
+                </div>
+            </div>
+            <div class="flex-grow-1 overflow-hidden" style="min-width: 0;">
+                <div class="card shadow-sm">
+                    <div class="table-responsive" style="max-height: 500px;">
+                        <table class="table table-hover table-striped mb-0 small">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Keyword</th>
+                                    <th>Question</th>
+                                    <th>Answer</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-body-tertiary d-flex gap-2">
+                        <button class="btn-copy btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-clipboard"></i> Copy RAW
+                        </button>
+                        <button class="btn-download btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-download"></i> .txt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-assistant-json">
+        <div class="d-flex gap-3 fade-in-up">
+            <div class="flex-shrink-0">
+                <div class="ratio ratio-1x1 rounded-circle bg-body border d-flex align-items-center justify-content-center"
+                    style="width: 32px; color: var(--brand-color);">
+                    <i class="bi bi-code-slash"></i>
+                </div>
+            </div>
+            <div class="flex-grow-1 overflow-hidden" style="min-width: 0;">
+                <div class="card shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                        <span class="small fw-bold text-muted">Wheel JSON</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Validated</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <pre class="m-0 rounded-0 border-0"
+                            style="max-height: 300px;"><code class="small" data-json></code></pre>
+                    </div>
+                    <div class="card-footer bg-body-tertiary d-flex flex-wrap gap-2">
+                        <button class="btn-save-browser btn btn-sm btn-outline-primary">
+                            <i class="bi bi-hdd-network-fill"></i> Play
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3">
+        <div id="liveToast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive"
+            aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-msg"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        /* ===================== CONFIG ===================== */
+        const GROQ_API_KEY = "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"; // NOTE: Remember to keep this private in production!
+        const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+        const GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models";
+        let currentModel = "llama-3.3-70b-versatile"; // Safe default
+
+        /* ===================== DOM & UTILS ===================== */
+        const $ = s => document.querySelector(s);
+        const chat = $('#chat');
+        const input = $('#input');
+
+        // Bootstrap Toast
+        const toastEl = $('#liveToast');
+        const bsToast = new bootstrap.Toast(toastEl);
+        const showToast = (msg) => {
+            $('#toast-msg').textContent = msg;
+            bsToast.show();
+        };
+
+        const TSV_HEADER = "#\tKeyword\tFull Question\tAnswer";
+
+        function escapeHTML(s) {
+            return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+        }
+
+        /* ===================== IMAGE / PDF / CAMERA HANDLING ===================== */
+        let currentImages = []; // Array of { dataUrl, label }
+
+        function compressImage(imgSrc) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX = 1600;
+                    let w = img.width, h = img.height;
+                    if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+                    else if (h > MAX) { w *= MAX / h; h = MAX; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.src = imgSrc;
+            });
+        }
+
+        function addImage(dataUrl, label) {
+            currentImages.push({ dataUrl, label: label || '' });
+            renderImagePreviews();
+        }
+
+        function renderImagePreviews() {
+            const container = $('#image-preview-container');
+            container.innerHTML = '';
+            if (currentImages.length === 0) {
+                container.classList.add('d-none');
+                return;
+            }
+            container.classList.remove('d-none');
+            currentImages.forEach((img, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'position-relative';
+                wrapper.style.cssText = 'width: fit-content; flex-shrink: 0;';
+                wrapper.innerHTML = `
+                    <img src="${img.dataUrl}" class="img-thumbnail bg-secondary-subtle" style="max-height: 70px; border-radius: 8px;">
+                    <span class="badge bg-dark position-absolute bottom-0 start-0 m-1 small" style="font-size: 9px;">${escapeHTML(img.label)}</span>
+                    <button class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle shadow"
+                        style="width: 20px; height: 20px; padding: 0; line-height: 1; font-size: 10px;"
+                        data-remove-idx="${idx}"><i class="bi bi-x"></i></button>
+                `;
+                wrapper.querySelector('[data-remove-idx]').onclick = () => {
+                    currentImages.splice(idx, 1);
+                    renderImagePreviews();
+                };
+                container.appendChild(wrapper);
+            });
+        }
+
+        function clearAllImages() {
+            currentImages = [];
+            renderImagePreviews();
+            $('#file-input').value = '';
+        }
+
+        // --- File / PDF attach ---
+        $('#btn-attach').onclick = () => $('#file-input').click();
+
+        $('#file-input').onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+
+            for (const file of files) {
+                if (file.type === 'application/pdf') {
+                    await handlePDF(file);
+                } else {
+                    // Image file
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => resolve(ev.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                    const compressed = await compressImage(dataUrl);
+                    addImage(compressed, file.name);
+                }
+            }
+        };
+
+        async function handlePDF(file) {
+            try {
+                showToast('Processing PDF...');
+                const arrayBuf = await file.arrayBuffer();
+
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
+
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+                const totalPages = pdf.numPages;
+                showToast(`PDF loaded: ${totalPages} page(s)`);
+
+                // Render pages onto canvases
+                const pageCanvases = [];
+                let totalHeight = 0;
+                let maxWidth = 0;
+
+                for (let p = 1; p <= Math.min(totalPages, 10); p++) {
+                    const page = await pdf.getPage(p);
+                    const scale = 2.0;
+                    const vp = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = vp.width;
+                    canvas.height = vp.height;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                    pageCanvases.push(canvas);
+                    totalHeight += vp.height;
+                    if (vp.width > maxWidth) maxWidth = vp.width;
+                }
+
+                // Stitch pages into one image
+                const merged = document.createElement('canvas');
+                merged.width = maxWidth;
+                merged.height = totalHeight;
+                const mCtx = merged.getContext('2d');
+                let yOff = 0;
+                for (const pc of pageCanvases) {
+                    mCtx.drawImage(pc, 0, yOff);
+                    yOff += pc.height;
+                }
+
+                const dataUrl = merged.toDataURL('image/jpeg', 0.85);
+                addImage(dataUrl, `${file.name} (${Math.min(totalPages, 10)} pg)`);
+            } catch (err) {
+                console.error('PDF Error:', err);
+                showToast('Failed to process PDF: ' + err.message);
+            }
+        }
+
+        // clearAllImages is defined above inside renderImagePreviews block
+
+        /* ===================== CAMERA ===================== */
+        let cameraStream = null;
+        let cameraFacingMode = 'environment'; // 'environment' = back, 'user' = front
+        let flashOn = false;
+
+        async function openCamera() {
+            const overlay = $('#camera-overlay');
+            overlay.classList.remove('d-none');
+
+            await startCameraStream();
+        }
+
+        async function startCameraStream() {
+            // Stop previous stream if any
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+            }
+
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: cameraFacingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                $('#camera-video').srcObject = cameraStream;
+
+                // Reset flash state on new stream
+                flashOn = false;
+                updateFlashIcon();
+            } catch (err) {
+                console.error('Camera error:', err);
+                showToast('Camera access denied or not available');
+                closeCamera();
+            }
+        }
+
+        function closeCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+            $('#camera-video').srcObject = null;
+            $('#camera-overlay').classList.add('d-none');
+            flashOn = false;
+        }
+
+        function toggleFlash() {
+            if (!cameraStream) return;
+            const track = cameraStream.getVideoTracks()[0];
+            if (!track) return;
+
+            const caps = track.getCapabilities ? track.getCapabilities() : {};
+            if (!caps.torch) {
+                showToast('Flash not supported on this device/camera');
+                return;
+            }
+
+            flashOn = !flashOn;
+            track.applyConstraints({ advanced: [{ torch: flashOn }] })
+                .catch(() => showToast('Could not toggle flash'));
+            updateFlashIcon();
+        }
+
+        function updateFlashIcon() {
+            const icon = $('#cam-flash i');
+            if (flashOn) {
+                icon.className = 'bi bi-lightning-fill';
+                $('#cam-flash').classList.add('text-warning');
+            } else {
+                icon.className = 'bi bi-lightning';
+                $('#cam-flash').classList.remove('text-warning');
+            }
+        }
+
+        async function flipCamera() {
+            cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+            await startCameraStream();
+        }
+
+        function capturePhoto() {
+            const video = $('#camera-video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+            addImage(dataUrl, cameraFacingMode === 'user' ? 'Front Camera' : 'Back Camera');
+            closeCamera();
+        }
+
+        // Wire up camera buttons
+        $('#btn-camera').onclick = () => openCamera();
+        $('#cam-close').onclick = () => closeCamera();
+        $('#cam-flip').onclick = () => flipCamera();
+        $('#cam-flash').onclick = () => toggleFlash();
+        $('#cam-shutter').onclick = () => capturePhoto();
+
+        /* ===================== CRYPTO LOGIC ===================== */
+        const SECRET_KEY = "HURUP_SECURE_KEY_v1";
+        function encrypt(text) {
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+            }
+            return btoa(result);
+        }
+
+        /* ===================== GAME LOGIC ===================== */
+        let gameLoopId = null;
+
+        function closeGame() {
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            document.getElementById('game-overlay').classList.add('d-none');
+            document.body.style.overflow = '';
+        }
+
+        function launchGame(jsonData) {
+            if (!jsonData) return;
+
+            const overlay = document.getElementById('game-overlay');
+            overlay.classList.remove('d-none');
+            document.body.style.overflow = 'hidden';
+            initGameEngine(jsonData);
+        }
+
+        function initGameEngine(data) {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            let w, h, minDim, cx, cy, geom;
+            const innerItems = data.innerOrder;
+            const outerItems = data.outerFlags;
+            const qaMap = {};
+            data.qas.forEach(q => { qaMap[q.key] = { q: q.question, a: q.answer }; });
+
+            const state = { gearAngle: 0, ringAngle: 0, velocity: 0, isDragging: false, lastDragAngle: 0, roundStarted: false };
+            const RING_TEETH = 24, GEAR_TEETH = 16, GEAR_RATIO = 1.5;
+
+            /* --- POSITIONING CONFIG --- */
+            const USER_POSITION_TWEAK = {
+                ANGULAR_OFFSET_DEG: 7.5,
+                RADIAL_OFFSET_FACTOR: 0.025,
+                VERTICAL_PX: 0
+            };
+
+            function resize() {
+                w = window.innerWidth; h = window.innerHeight;
+                canvas.width = w; canvas.height = h;
+                minDim = Math.min(w, h);
+                cx = w / 2; cy = h / 2;
+                const ringR = minDim * 0.42, toothH = minDim * 0.05;
+                geom = {
+                    ringOuter: ringR, ringRoot: ringR - minDim * 0.07, ringTip: ringR - minDim * 0.07 - toothH,
+                    gearRoot: (ringR - minDim * 0.07 - toothH / 2) * (2 / 3) - toothH / 2,
+                    gearTip: ((ringR - minDim * 0.07 - toothH / 2) * (2 / 3) - toothH / 2) + toothH,
+                    ringCenter: { x: cx, y: cy },
+                    gearCenter: {
+                        x: cx + ((ringR - minDim * 0.07 - toothH / 2) * (1 / 3)) * Math.cos(10 * Math.PI / 180),
+                        y: cy + ((ringR - minDim * 0.07 - toothH / 2) * (1 / 3)) * Math.sin(10 * Math.PI / 180)
+                    }
+                };
+                updateDomPositions();
+                updateUi();
+            }
+
+            const polar = (c, r, a) => ({ x: c.x + r * Math.cos(a), y: c.y + r * Math.sin(a) });
+
+            function drawGearPath(ctx, center, teeth, rootR, tipR, isInternal) {
+                const pitch = (2 * Math.PI) / teeth, topFrac = 0.45;
+                const rBase = isInternal ? tipR : rootR, rExt = isInternal ? rootR : tipR;
+                ctx.beginPath();
+                const startP = polar(center, rBase, -pitch / 2);
+                ctx.moveTo(startP.x, startP.y);
+                for (let i = 0; i < teeth; i++) {
+                    const a = i * pitch, flank = (pitch * (1 - topFrac)) / 2;
+                    const a1 = a - pitch / 2, a2 = a - pitch / 2 + flank, a3 = a - (pitch * topFrac) / 2, a4 = a + (pitch * topFrac) / 2, a5 = a + pitch / 2 - flank;
+                    ctx.arc(center.x, center.y, rBase, a1, a2);
+                    const cp1 = polar(center, (rBase + rExt) / 2, a2), tip1 = polar(center, rExt, a3);
+                    ctx.quadraticCurveTo(cp1.x, cp1.y, tip1.x, tip1.y);
+                    ctx.arc(center.x, center.y, rExt, a3, a4);
+                    const cp2 = polar(center, (rBase + rExt) / 2, a5), base2 = polar(center, rBase, a5);
+                    ctx.quadraticCurveTo(cp2.x, cp2.y, base2.x, base2.y);
+                }
+                ctx.closePath();
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, w, h);
+                ctx.save(); ctx.translate(cx, cy); ctx.beginPath(); ctx.arc(0, 0, geom.ringOuter, 0, Math.PI * 2); ctx.arc(0, 0, geom.ringRoot, 0, Math.PI * 2, true); ctx.fillStyle = '#0d6efd'; ctx.fill();
+                ctx.rotate(state.ringAngle + (15 * Math.PI / 180)); ctx.fillStyle = '#0a58ca'; ctx.beginPath(); ctx.arc(0, 0, geom.ringRoot, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#3d8bfd'; drawGearPath(ctx, { x: 0, y: 0 }, RING_TEETH, geom.ringRoot, geom.ringTip, true); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+
+                ctx.save(); ctx.translate(geom.gearCenter.x, geom.gearCenter.y); ctx.rotate(state.gearAngle);
+                ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 15;
+                const grad = ctx.createRadialGradient(0, 0, geom.gearRoot * 0.2, 0, 0, geom.gearTip);
+                grad.addColorStop(0, '#ffc107'); grad.addColorStop(1, '#fd7e14');
+                ctx.fillStyle = grad; drawGearPath(ctx, { x: 0, y: 0 }, GEAR_TEETH, geom.gearRoot, geom.gearTip, false); ctx.fill();
+                ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = 'bold 14px sans-serif'; ctx.fillStyle = '#000';
+                const textR = geom.gearRoot * 0.75, step = (2 * Math.PI) / GEAR_TEETH;
+                innerItems.forEach((label, i) => {
+                    ctx.save(); const theta = i * step; ctx.rotate(theta); ctx.translate(textR, 0);
+                    const global = (state.gearAngle + theta) % (Math.PI * 2); const norm = global < 0 ? global + Math.PI * 2 : global;
+                    if (norm > Math.PI / 2 && norm < 3 * Math.PI / 2) ctx.rotate(Math.PI);
+                    ctx.fillText(label, 0, 0); ctx.restore();
+                });
+                ctx.restore();
+            }
+
+            function flagEmojiToCountryCode(flag) {
+                if (!flag || flag.length < 2) return null;
+                const codePoints = [...flag].map(c => c.codePointAt(0));
+                const letters = codePoints.filter(cp => cp >= 0x1F1E6 && cp <= 0x1F1FF).map(cp => String.fromCharCode(cp - 0x1F1E6 + 65));
+                if (letters.length === 2) return letters.join('').toLowerCase();
+                return null;
+            }
+
+            function updateDomPositions() {
+                const container = document.getElementById('game-flags-container');
+                if (container.children.length !== outerItems.length) {
+                    container.innerHTML = '';
+                    outerItems.forEach(txt => {
+                        const el = document.createElement('div');
+                        el.className = 'flag-pill';
+                        const code = flagEmojiToCountryCode(txt);
+                        if (code) {
+                            el.innerHTML = `<img src="https://flagcdn.com/w40/${code}.png" style="width: 20px; height: auto;">`;
+                        } else {
+                            el.innerText = txt;
+                        }
+                        container.appendChild(el);
+                    });
+                }
+                if (!geom) return;
+
+                const ringStepRad = (Math.PI * 2) / RING_TEETH;
+                const manualOffset = USER_POSITION_TWEAK.ANGULAR_OFFSET_DEG * Math.PI / 180;
+                const phase = state.ringAngle + (ringStepRad / 2) + manualOffset;
+
+                Array.from(container.children).forEach((el, i) => {
+                    const theta = i * ringStepRad + phase;
+                    let norm = theta % (Math.PI * 2);
+                    if (norm > Math.PI) norm -= Math.PI * 2;
+                    if (norm < -Math.PI) norm += Math.PI * 2;
+                    const abs = Math.abs(norm);
+                    const range = ringStepRad * 2.5;
+                    let ratio = 0;
+                    if (abs < range) ratio = 1 - (abs / range);
+
+                    const minScale = 1.0, maxScale = 1.5;
+                    const sizeScale = minScale + (maxScale - minScale) * ratio;
+                    const zIndex = ratio > 0.1 ? 20 : 10;
+
+                    const baseR = geom.ringOuter + (minDim * USER_POSITION_TWEAK.RADIAL_OFFSET_FACTOR);
+                    const pop = (minDim * 0.01) + 1;
+                    const r = baseR + (pop * ratio);
+
+                    const x = cx + r * Math.cos(theta);
+                    const y = cy + r * Math.sin(theta);
+
+                    el.style.left = x + 'px';
+                    el.style.top = y + 'px';
+
+                    const anchorFactor = ratio;
+                    const tx = -50 + (Math.cos(theta) * 50 * anchorFactor);
+                    const ty = -50 + (Math.sin(theta) * 50 * anchorFactor);
+
+                    el.style.transform = `translate(${tx}%, ${ty}%) scale(${sizeScale})`;
+                    el.style.zIndex = zIndex;
+                });
+            }
+
+            function updateUi() {
+                const contactAng = 0;
+                const step = (Math.PI * 2) / GEAR_TEETH;
+                const rawIdx = (contactAng - state.gearAngle) / step;
+                let idx = Math.round(rawIdx) % GEAR_TEETH; if (idx < 0) idx += GEAR_TEETH;
+                const key = innerItems[idx], qData = qaMap[key];
+                const qPanel = document.getElementById('game-q-text'), box = document.getElementById('game-selection-box');
+
+                if (qPanel) {
+                    const qContainer = document.getElementById('game-q-panel');
+                    qContainer.style.top = '20px';
+                    qContainer.style.left = '20px';
+                    qContainer.style.maxWidth = '300px';
+                }
+
+                if (qData) {
+                    qPanel.innerText = qData.q;
+                    const aText = document.getElementById('game-a-text');
+                    const aValue = document.getElementById('game-a-value');
+                    if (aText && aValue) {
+                        aText.style.display = 'block';
+                        aValue.innerText = qData.a;
+                    }
+                } else {
+                    qPanel.innerText = 'Rotate to align a question...';
+                    const aText = document.getElementById('game-a-text');
+                    if (aText) aText.style.display = 'none';
+                }
+
+                box.classList.remove('d-none');
+                const innerTextR = geom.gearRoot * 0.75;
+                const innerTextX = geom.gearCenter.x + innerTextR;
+                const outerEdgeX = cx + geom.ringOuter + (minDim * USER_POSITION_TWEAK.RADIAL_OFFSET_FACTOR) + (minDim * 0.08);
+
+                const padding = 50;
+                const startX = innerTextX - padding;
+                const endX = outerEdgeX + padding;
+
+                const boxWidth = endX - startX;
+                const boxHeight = 50;
+                const centerY = (geom.gearCenter.y + cy) / 2;
+
+                box.style.left = startX + 'px';
+                box.style.top = (centerY - (boxHeight / 2)) + 'px';
+                box.style.width = boxWidth + 'px';
+                box.style.height = boxHeight + 'px';
+                box.style.zIndex = '50';
+            }
+
+            window.onkeydown = (e) => {
+                if (e.key === 'ArrowRight') {
+                    state.ringAngle += 0.05; state.gearAngle = state.ringAngle * 1.5;
+                    updateDomPositions(); updateUi();
+                }
+                if (e.key === 'ArrowLeft') {
+                    state.ringAngle -= 0.05; state.gearAngle = state.ringAngle * 1.5;
+                    updateDomPositions(); updateUi();
+                }
+                if (e.key.toLowerCase() === 's' || e.key === 'Enter') {
+                    if (!state.roundStarted) {
+                        state.roundStarted = true;
+                        document.getElementById('game-flags-container').classList.remove('opacity-0');
+                        document.getElementById('game-hint-box').style.opacity = '0';
+                    } else {
+                        state.roundStarted = false;
+                        document.getElementById('game-flags-container').classList.add('opacity-0');
+                        document.getElementById('game-hint-box').style.opacity = '1';
+                        const res = document.getElementById('game-result-overlay');
+                        res.classList.remove('d-none', 'opacity-0');
+                        document.getElementById('game-res-emoji').innerText = "⚡";
+                        document.getElementById('game-res-msg').innerText = "SELECTED";
+                        setTimeout(() => res.classList.add('d-none', 'opacity-0'), 1500);
+                    }
+                }
+                if (e.key === 'Escape') closeGame();
+            };
+
+            function getAng(e) { const x = e.touches ? e.touches[0].clientX : e.clientX; const y = e.touches ? e.touches[0].clientY : e.clientY; return Math.atan2(y - cy, x - cx); }
+            canvas.onmousedown = canvas.ontouchstart = (e) => { state.isDragging = true; state.lastDragAngle = getAng(e); state.velocity = 0; };
+            window.onmousemove = window.ontouchmove = (e) => {
+                if (!state.isDragging) return;
+                const ang = getAng(e); let delta = ang - state.lastDragAngle;
+                if (delta > Math.PI) delta -= Math.PI * 2; if (delta < -Math.PI) delta += Math.PI * 2;
+                state.ringAngle += delta; state.gearAngle = state.ringAngle * 1.5; state.lastDragAngle = ang; state.velocity = delta;
+                updateDomPositions(); updateUi();
+            };
+            window.onmouseup = window.ontouchend = () => state.isDragging = false;
+
+            function loop() {
+                if (!state.isDragging && Math.abs(state.velocity) > 0.001) {
+                    state.velocity *= 0.95; state.ringAngle += state.velocity; state.gearAngle = state.ringAngle * 1.5;
+                    updateDomPositions(); updateUi();
+                }
+                render(); gameLoopId = requestAnimationFrame(loop);
+            }
+            resize(); window.onresize = resize;
+            if (gameLoopId) cancelAnimationFrame(gameLoopId); loop();
+        }
+
+        /* ===================== API LOGIC ===================== */
+
+        async function groqChat(messages, useJsonMode = false) {
+            if (!GROQ_API_KEY || GROQ_API_KEY.includes("YOUR_")) {
+                showToast("Missing Groq API Key!");
+                throw new Error("Missing Key");
+            }
+
+            const payload = {
+                model: currentModel,
+                messages: messages,
+                temperature: useJsonMode ? 0.1 : 0.5,
+                max_tokens: 4096,
+                response_format: useJsonMode ? { type: "json_object" } : undefined
+            };
+
+            const res = await fetch(GROQ_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error?.message || "Groq API Error");
+            }
+            const data = await res.json();
+            return data.choices?.[0]?.message?.content || "";
+        }
+
+        /* ===================== OCR (Tesseract.js) ===================== */
+        async function extractTextFromImage(imageData) {
+            const result = await Tesseract.recognize(imageData, 'eng', {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const pct = Math.round((m.progress || 0) * 100);
+                        updateThinkingText(`OCR Processing... ${pct}%`);
+                    }
+                }
+            });
+            return result.data.text.trim();
+        }
+
+        function extractBlock(text) { return text.replace(/```(tsv|json)?/g, '').trim(); }
+        function tryParseJSON(text) { try { return JSON.parse(extractBlock(text)); } catch { return null; } }
+
+        function renderUser(text) {
+            const tpl = $('#tpl-user').content.cloneNode(true);
+            tpl.querySelector('.msg-content').textContent = text;
+            chat.appendChild(tpl);
+            $('#chat-scroll-area').scrollTop = $('#chat-scroll-area').scrollHeight;
+        }
+
+        function renderTable(rows) {
+            const tpl = $('#tpl-assistant-table').content.cloneNode(true);
+            const tbody = tpl.querySelector('tbody');
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${escapeHTML(r[0])}</td><td class="font-monospace text-primary">${escapeHTML(r[1])}</td><td>${escapeHTML(r[2])}</td><td class="fw-bold">${escapeHTML(r[3])}</td>`;
+                tbody.appendChild(tr);
+            });
+            const node = tpl.firstElementChild;
+            chat.appendChild(node);
+
+            const tsv = TSV_HEADER + '\n' + rows.map(r => r.join('\t')).join('\n');
+            node.querySelector('.btn-copy').onclick = async () => { await navigator.clipboard.writeText(tsv); showToast('Copied TSV to clipboard'); };
+            node.querySelector('.btn-download').onclick = () => {
+                const blob = new Blob([tsv], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'qa.txt';
+                document.body.appendChild(a); a.click(); URL.revokeObjectURL(url); a.remove();
+            };
+            $('#chat-scroll-area').scrollTop = $('#chat-scroll-area').scrollHeight;
+        }
+
+        function renderJSON(obj) {
+            const tpl = $('#tpl-assistant-json').content.cloneNode(true);
+            const node = tpl.firstElementChild;
+            node.querySelector('[data-json]').textContent = JSON.stringify(obj, null, 2);
+
+            //      const btnPlay = document.createElement('button');
+            //      btnPlay.className = 'btn btn-sm btn-primary d-flex align-items-center gap-1';
+            //      btnPlay.innerHTML = '<i class="bi bi-play-fill"></i> Play Preview';
+            //      btnPlay.onclick = () => launchGame(obj);
+            //      node.querySelector('.card-footer').appendChild(btnPlay);
+
+            node.querySelector('.btn-save-browser').onclick = () => {
+                const jsonStr = JSON.stringify(obj, null, 2);
+                const encrypted = encrypt(jsonStr);
+                const targetUrl = 'https://hurup.in/dist/index.html#import=' + encodeURIComponent(encrypted);
+                showToast('Opening game with your custom questions...');
+                window.open(targetUrl, '_blank');
+            };
+
+            chat.appendChild(node);
+            $('#chat-scroll-area').scrollTop = $('#chat-scroll-area').scrollHeight;
+        }
+
+        function renderThinking(msg) {
+            const div = document.createElement('div');
+            div.className = 'd-flex align-items-center justify-content-center py-4 text-muted fade-in-up';
+            div.dataset.thinking = '1';
+            div.innerHTML = `<div class="spinner-border spinner-border-sm me-2" role="status"></div><span class="small fst-italic" data-thinking-text>${escapeHTML(msg)}</span>`;
+            chat.appendChild(div);
+            $('#chat-scroll-area').scrollTop = $('#chat-scroll-area').scrollHeight;
+        }
+
+        function updateThinkingText(msg) {
+            const el = chat.querySelector('[data-thinking-text]');
+            if (el) el.textContent = msg;
+        }
+
+        function clearThinking() {
+            const n = chat.querySelector('[data-thinking="1"]');
+            if (n) n.remove();
+        }
+
+        function renderError(msg) {
+            const div = document.createElement('div');
+            div.className = 'alert alert-danger fade-in-up small';
+            div.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i> ${escapeHTML(msg)}`;
+            chat.appendChild(div);
+        }
+
+        /* ===================== KID SAFETY FILTER ===================== */
+        const BLOCKED_WORDS = [
+            // Violence & weapons
+            'kill', 'murder', 'suicide', 'rape', 'assault', 'torture', 'abuse',
+            'gun', 'weapon', 'bomb', 'terrorist', 'terrorism', 'shooting',
+            'stabbing', 'blood', 'gore', 'decapitate', 'massacre', 'genocide',
+            'slaughter', 'homicide', 'strangle', 'molest',
+            // Sexual content
+            'sex', 'sexual', 'porn', 'pornography', 'explicit', 'nude',
+            'naked', 'erotic', 'orgasm', 'genital', 'penis', 'vagina',
+            'intercourse', 'fetish', 'hentai', 'xxx', 'nsfw', 'prostitut',
+            'brothel', 'stripper',
+            // Drugs & substances
+            'cocaine', 'heroin', 'meth', 'methamphetamine', 'marijuana',
+            'cannabis', 'weed', 'lsd', 'ecstasy', 'narcotic', 'overdose',
+            'drug abuse', 'crack', 'opium', 'fentanyl',
+            // Alcohol (excessive context)
+            'drunk', 'alcoholism', 'binge drinking', 'intoxicat',
+            // Profanity
+            'fuck', 'shit', 'ass', 'bitch', 'damn', 'bastard', 'crap',
+            'dick', 'cunt', 'whore', 'slut',
+            // Hate & discrimination
+            'racist', 'racism', 'hate crime', 'homophobia', 'slur',
+            'supremacist', 'nazi', 'extremist',
+            // Gambling
+            'gambling', 'betting', 'casino',
+            // Self-harm
+            'self-harm', 'self harm', 'cutting', 'anorexia', 'bulimia'
+        ];
+
+        function contentSafetyCheck(rows) {
+            const issues = [];
+            for (const row of rows) {
+                const combined = row.join(' ').toLowerCase();
+                for (const word of BLOCKED_WORDS) {
+                    if (combined.includes(word)) {
+                        issues.push(`Blocked word "${word}" found in row: "${row[2] || row[1]}"`);
+                    }
+                }
+            }
+            return { safe: issues.length === 0, issues };
+        }
+
+        function buildTSVSystem(topic) {
+            return `You are a Generator. Output ONLY TSV. Topic: "${topic}". Header: #\tKeyword\tFull Question\tAnswer.
+
+⚠️ KID SAFETY — MANDATORY RULES (VIOLATION = FAILURE):
+- ALL content MUST be 100% safe for children ages 6+.
+- ABSOLUTELY NO: violence, weapons, blood, death, killing, war details, gore.
+- ABSOLUTELY NO: sexual content, nudity, romantic/adult relationships, innuendo.
+- ABSOLUTELY NO: drugs, alcohol, smoking, substance abuse, addiction.
+- ABSOLUTELY NO: profanity, slang, insults, hate speech, discrimination.
+- ABSOLUTELY NO: gambling, self-harm, horror, scary/disturbing themes.
+- ABSOLUTELY NO: controversial politics, religion bashing, or divisive topics.
+- Questions must be EDUCATIONAL, FUN, and FAMILY-FRIENDLY.
+- Think of this as content for a children's classroom quiz game.
+- When in doubt, keep it wholesome and positive.
+
+STRUCTURE: Generate exactly 16 Q&A rows + 8 confuser answers:
+- Rows 1-8: First set of 8 questions (Group A)
+- Rows 9-16: Second set of 8 questions (Group B) - EACH PAIR LINKED TO GROUP A:
+  - Row 9 pairs with Row 1: SAME sub-topic, but MUST be CLEARLY DISTINCT.
+  - The answer for Row 1 must NOT be a technically correct answer for Row 9, and vice versa.
+  - Use specific details/adjectives to differentiate.
+  
+- After row 16, add 8 more rows (17-24) with JUST confuser answers.
+  - Row 17 must be a "Confuser" specifically for the pair (Row 1 & Row 9). It must be VERY SIMILAR contextually to Answer 1 and Answer 9 but clearly incorrect/distinct.
+  - Row 18 matches Row 2 & 10, etc.
+  
+Rules: Keyword: Single word, A-Z, <=12 chars, ALL UNIQUE. Question: 15-40 words. Answer: 1-4 words.
+CRITICAL: YOU MUST GENERATE EXACTLY 24 ROWS. 
+- Rows 1-16: Question & Answer pairs.
+- Rows 17-24: CONFUSER ANSWERS (Keyword="CX", Question="CX", Answer=Specific Confuser for the pair N and N+8).
+ALL 24 ANSWERS MUST BE UNIQUE STRINGS. NO DUPLICATES ALLOWED.`;
+        }
+
+        function buildJSONSystem(tsv, topic) {
+            return `You are a JSON Generator. Input TSV:\n${tsv}\nOutput JSON object with keys: qas (array of 16 objects with key, question, answer - ONLY first 16 rows), innerOrder (16 keywords), outerFlags (all 24 answers). ALL strings must be UNIQUE. Note: Use "key" as the property name for the keyword in the qas objects.`;
+        }
+
+        function splitTopic(text) { return text.replace(/make|generate|rows|table|questions/gi, '').trim() || "General Knowledge"; }
+
+        function parseTSV(tsv) {
+            const lines = tsv.trim().split(/\r?\n/).filter(l => !l.startsWith('```'));
+            const rows = [];
+            for (const l of lines) {
+                const p = l.split('\t');
+                if (p.length >= 4 && p[0].trim().match(/^\d+$/)) {
+                    rows.push([p[0].trim(), p[1].trim(), p.slice(2, p.length - 1).join(' ').trim(), p[p.length - 1].trim()]);
+                }
+            }
+            if (rows.length < 24) return { ok: false, reason: `Got ${rows.length}/24 rows (need 16 Q&A + 8 Confusers)` };
+
+            const allAnswers = new Set();
+            for (const r of rows) {
+                const ans = r[3].toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (allAnswers.has(ans)) {
+                    return { ok: false, reason: `Duplicate Answer found: "${r[3]}"` };
+                }
+                allAnswers.add(ans);
+            }
+
+            const valid = rows.slice(0, 24);
+            const usedKeywords = new Set();
+            const processedRows = valid.map((row, idx) => {
+                if (idx < 16) {
+                    let extractedKeyword = extractKeyword(row[2], row[3], idx);
+                    const keyLower = extractedKeyword.toLowerCase();
+                    if (usedKeywords.has(keyLower)) {
+                        extractedKeyword = extractedKeyword.slice(0, 10) + (idx + 1);
+                    }
+                    usedKeywords.add(extractedKeyword.toLowerCase());
+                    return [row[0], extractedKeyword, row[2], row[3]];
+                } else {
+                    return [row[0], row[1], row[2], row[3]];
+                }
+            });
+
+            const keys = new Set(processedRows.slice(0, 16).map(r => r[1].toLowerCase()));
+            if (keys.size !== 16) return { ok: false, reason: "Duplicate Keywords after extraction", rows: processedRows };
+            return { ok: true, rows: processedRows };
+        }
+
+        function extractKeyword(question, answer, index) {
+            const stopWords = ['what', 'which', 'who', 'how', 'when', 'where', 'is', 'are', 'was', 'were',
+                'the', 'a', 'an', 'of', 'in', 'to', 'for', 'with', 'on', 'at', 'by', 'from', 'as',
+                'name', 'called', 'known', 'type', 'kind', 'current', 'first', 'second', 'main',
+                'india', 'indian', 'that', 'this', 'its', 'it', 'and', 'or', 'but', 'does', 'has', 'have',
+                'term', 'popular', 'famous'];
+
+            const answerWords = answer.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+            const excludeWords = [...stopWords, ...answerWords];
+
+            const words = question.toLowerCase()
+                .replace(/[^a-z\s]/g, '')
+                .split(/\s+/)
+                .filter(w => w.length > 2 && !excludeWords.includes(w));
+
+            let keyword = '';
+            if (words.length >= 2) {
+                const w1 = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+                const w2 = words[1].charAt(0).toUpperCase() + words[1].slice(1);
+                keyword = (w1 + w2).slice(0, 12);
+            } else if (words.length === 1) {
+                keyword = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+                keyword = keyword.slice(0, 12);
+            } else {
+                keyword = 'Question' + (index + 1);
+            }
+            return keyword;
+        }
+
+        function validateJSON(obj, rows) {
+            if (!obj?.qas || obj.qas.length !== 16) return { ok: false, reason: "Bad QAS length (need 16)" };
+            if (obj.outerFlags.length !== 24) return { ok: false, reason: "Bad OuterFlags length (need 24)" };
+            return { ok: true };
+        }
+
+        // Main Controller - Updated for image data
+        async function executeGenerationFlow(topic, images = [], retryCount = 0) {
+            try {
+                clearThinking();
+
+                let extractedText = '';
+
+                // If images are provided, extract text from each using Tesseract.js OCR
+                if (images.length > 0) {
+                    const allTexts = [];
+                    for (let i = 0; i < images.length; i++) {
+                        renderThinking(`OCR Processing image ${i + 1}/${images.length}... 0%`);
+                        const text = await extractTextFromImage(images[i].dataUrl);
+                        clearThinking();
+                        if (text) allTexts.push(text);
+                    }
+
+                    extractedText = allTexts.join('\n\n---\n\n');
+
+                    if (!extractedText) {
+                        renderError('Could not extract any text from the images. Please try clearer images.');
+                        return;
+                    }
+
+                    showToast(`OCR done — extracted ${extractedText.length} characters from ${images.length} image(s)`);
+                }
+
+                renderThinking(retryCount > 0 ? `Attempt ${retryCount + 1}: Generating TSV...` : 'Generating TSV...');
+
+                let systemPrompt = buildTSVSystem(topic);
+                let userContent = `Topic: ${topic}`;
+
+                if (extractedText) {
+                    systemPrompt += `\n\n🚨 ABSOLUTE HIGHEST PRIORITY — IMAGE-EXTRACTED TEXT RULES 🚨:
+The user provided image(s) from which the following text was extracted via OCR.
+
+MANDATORY:
+1. ALL 24 Q&A rows MUST come ONLY from the extracted text below. Do NOT use any outside knowledge.
+2. Every question, answer, and keyword MUST be directly based on facts, terms, or data found in the extracted text.
+3. If the extracted text mentions a specific fact, name, date, formula, or definition — USE IT as-is.
+4. Do NOT add, invent, or supplement with information not present in the extracted text.
+5. If the extracted text is short, repeat sub-topics or ask from different angles — but NEVER go outside the text.
+6. Confuser answers (rows 17-24) should also be plausible alternatives based on the same extracted text context.
+7. Treat the extracted text as THE ONLY SOURCE OF TRUTH. Ignore your general knowledge completely.
+
+EXTRACTED TEXT:
+"""
+${extractedText}
+"""`;
+                    if (topic && topic.toLowerCase() !== 'general knowledge') {
+                        systemPrompt += `\nThe user also specified a topic filter: "${topic}". Focus on parts of the extracted text related to this topic, but still ONLY use data from the extracted text.`;
+                    }
+                    userContent = `Generate the exact 24 TSV rows using ONLY the extracted text provided. Do NOT use outside knowledge. Topic: ${topic}`;
+                }
+
+                const messages = [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userContent }
+                ];
+
+                const tsvResp = await groqChat(messages, false);
+                let tsv = extractBlock(tsvResp);
+                let parsed = parseTSV(tsv);
+
+                if (!parsed.ok) {
+                    clearThinking(); renderThinking("Fixing TSV...");
+                    // Provide the error and previous TSV to standard text model to fix structure
+                    const fixResp = await groqChat([
+                        { role: 'system', content: buildTSVSystem(topic) },
+                        { role: 'user', content: `Fix error: ${parsed.reason}\nPrevious output:\n${tsv}` }
+                    ]);
+                    tsv = extractBlock(fixResp);
+                    parsed = parseTSV(tsv);
+                }
+
+                clearThinking();
+                if (!parsed.ok) throw new Error(parsed.reason);
+
+                // Kid Safety Filter — check all rows for blocked content
+                const safetyResult = contentSafetyCheck(parsed.rows);
+                if (!safetyResult.safe) {
+                    console.warn('Content safety issues:', safetyResult.issues);
+                    if (retryCount < 2) {
+                        renderThinking(`Content safety issue detected. Regenerating (attempt ${retryCount + 2})...`);
+                        await new Promise(r => setTimeout(r, 500));
+                        return executeGenerationFlow(topic, images, retryCount + 1);
+                    }
+                    renderError('Could not generate kid-safe content after multiple attempts. Please try a different topic.');
+                    return;
+                }
+
+                renderTable(parsed.rows);
+
+                const keywords = [];
+                const usedKeywords = new Set();
+
+                for (let i = 0; i < 16; i++) {
+                    clearThinking(); renderThinking(`Generating keyword ${i + 1}/16...`);
+
+                    const question = parsed.rows[i][2];
+                    const answer = parsed.rows[i][3];
+                    const usedList = Array.from(usedKeywords).join(', ');
+
+                    const prompt = `Generate a short, meaningful label (1-2 words, max 16 chars) for this question. It will be displayed on a small game wheel.
+Question: "${question}"
+Answer: "${answer}"
+
+RULES:
+1. Label must NOT contain any words from the Answer.
+2. Label must NOT be any of these already used: [${usedList}]
+3. Label must catch the KEY concept.
+4. Use Title Case. Spaces are allowed. NO special chars.
+Output ONLY the label.`;
+
+                    let attempts = 0;
+                    let success = false;
+
+                    while (!success && attempts < 3) {
+                        try {
+                            attempts++;
+                            const resp = await groqChat([
+                                { role: 'system', content: 'You are a keyword generator. Output only a short label.' },
+                                { role: 'user', content: prompt }
+                            ]);
+
+                            let keyword = resp.trim().replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+
+                            if (keyword && keyword.length > 2 && !usedKeywords.has(keyword.toLowerCase())) {
+                                keywords.push(keyword);
+                                usedKeywords.add(keyword.toLowerCase());
+                                success = true;
+                            } else if (attempts === 3) {
+                                const stopWords = ['what', 'which', 'who', 'how', 'when', 'where', 'is', 'are', 'was', 'were', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+                                keyword = parsed.rows[i][2].split(' ')
+                                    .map(w => w.replace(/[^a-zA-Z]/g, ''))
+                                    .find(w => w.length > 3 && !stopWords.includes(w.toLowerCase()) && !usedKeywords.has(w.toLowerCase()))
+                                    || `Question${i + 1}`;
+
+                                if (usedKeywords.has(keyword.toLowerCase())) keyword += (i + 1);
+
+                                keywords.push(keyword.slice(0, 16));
+                                usedKeywords.add(keyword.toLowerCase());
+                                success = true;
+                            }
+                        } catch (e) {
+                            console.warn(`Keyword ${i + 1} attempt ${attempts} failed:`, e);
+                            if (attempts === 3) {
+                                keywords.push(`Question${i + 1}`);
+                                usedKeywords.add(`question${i + 1}`);
+                                success = true;
+                            } else {
+                                await new Promise(r => setTimeout(r, 1000));
+                            }
+                        }
+                    }
+                }
+
+                clearThinking(); renderThinking("Building final JSON...");
+                const jsonResp = await groqChat([{ role: 'system', content: buildJSONSystem(tsv, topic) }, { role: 'user', content: "Generate JSON" }], true);
+                let obj = tryParseJSON(jsonResp);
+
+                if (obj && obj.qas && parsed.rows) {
+                    const qasRows = parsed.rows.slice(0, 16);
+                    obj.qas = qasRows.map((row, idx) => ({
+                        key: keywords[idx] || `Item${idx + 1}`,
+                        question: row[2],
+                        answer: row[3]
+                    }));
+
+                    obj.innerOrder = keywords.slice(0, 16);
+                    let allFlags = parsed.rows.slice(0, 24).map(r => r[3]);
+
+                    for (let i = 0; i < 8; i++) {
+                        const indices = [i, i + 8, i + 16];
+                        const items = indices.map(idx => allFlags[idx]);
+
+                        for (let j = items.length - 1; j > 0; j--) {
+                            const k = Math.floor(Math.random() * (j + 1));
+                            [items[j], items[k]] = [items[k], items[j]];
+                        }
+                        indices.forEach((idx, k) => { allFlags[idx] = items[k]; });
+                    }
+
+                    const firstFlag = allFlags.shift();
+                    allFlags.push(firstFlag);
+                    obj.outerFlags = allFlags;
+                }
+
+                const val = validateJSON(obj, parsed.rows);
+
+                clearThinking();
+                if (val.ok) renderJSON(obj);
+                else {
+                    renderError("JSON Validation Failed. Showing raw.");
+                    renderJSON(obj || { error: "Parse Failed", raw: jsonResp });
+                }
+
+            } catch (e) {
+                console.error("Generation Error:", e);
+                clearThinking();
+
+                const MAX_RETRIES = 2;
+                if (retryCount < MAX_RETRIES) {
+                    const delay = 1500;
+                    renderThinking(`Error: ${e.message}. Retrying automatically (${retryCount + 1}/${MAX_RETRIES})...`);
+                    await new Promise(r => setTimeout(r, delay));
+                    return executeGenerationFlow(topic, images, retryCount + 1);
+                }
+
+                renderError(`Failed after ${retryCount + 1} attempts. Last error: ${e.message}`);
+            }
+        }
+
+        // Updated button click logic
+        $('#btn-send').onclick = () => {
+            const raw = input.value.trim();
+
+            if (!raw && currentImages.length === 0) return;
+
+            let msgText = raw || "Image(s) provided";
+            if (currentImages.length > 0 && raw) msgText += ` [${currentImages.length} Image(s) Attached]`;
+
+            renderUser(msgText);
+
+            const topic = splitTopic(raw);
+            const imagesCopy = [...currentImages];
+
+            input.value = '';
+            clearAllImages();
+
+            executeGenerationFlow(topic, imagesCopy);
+        };
+
+        input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#btn-send').click(); } };
+
+        const applyTheme = (t) => document.documentElement.setAttribute('data-bs-theme', t);
+        if (localStorage.getItem('theme') === 'dark') applyTheme('dark');
+
+        $('#btn-theme').onclick = () => {
+            const curr = document.documentElement.getAttribute('data-bs-theme');
+            const next = curr === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('theme', next);
+        };
+
+        async function fetchBestModel() {
+            try {
+                const badge = $('#model-badge');
+                if (!GROQ_API_KEY || GROQ_API_KEY.includes("YOUR_")) {
+                    badge.textContent = "Missing API Key";
+                    return;
+                }
+
+                const res = await fetch(GROQ_MODELS_URL, {
+                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
+                });
+
+                if (!res.ok) throw new Error("Failed to fetch models");
+
+                const data = await res.json();
+                const models = data.data;
+
+                const priorities = [
+                    "llama-3.3-70b-versatile",
+                    "llama-3.1-70b-versatile",
+                    "llama3-70b-8192"
+                ];
+
+                let selected = null;
+
+                for (const p of priorities) {
+                    if (models.find(m => m.id === p)) {
+                        selected = p;
+                        break;
+                    }
+                }
+
+                if (!selected) {
+                    const fallback = models.find(m => m.id.includes("llama") && m.id.includes("70b"));
+                    if (fallback) selected = fallback.id;
+                }
+
+                if (selected) {
+                    currentModel = selected;
+                }
+
+                badge.textContent = `Groq ${currentModel}`;
+
+            } catch (e) {
+                console.error("Model fetch error:", e);
+                $('#model-badge').textContent = `Groq ${currentModel} (Default)`;
+            }
+        }
+
+        fetchBestModel();
+        renderUser("Bootstrap 5 + Groq Ready. Type a topic or upload an image!");
+    </script>
+</body>
+
+</html>

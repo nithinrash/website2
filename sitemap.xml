@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+    
+    <!-- Homepage -->
+    <url>
+        <loc>https://www.hurupgaming.com/</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+        <image:image>
+            <image:loc>https://www.hurupgaming.com/assets/hurup-gaming-logo.png</image:loc>
+            <image:title>KineBlox - Phygital Board Games India</image:title>
+        </image:image>
+    </url>
+    
+    <!-- Products Section -->
+    <url>
+        <loc>https://www.hurupgaming.com/#products</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- About Section -->
+    <url>
+        <loc>https://www.hurupgaming.com/#about</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- Features Section -->
+    <url>
+        <loc>https://www.hurupgaming.com/#features</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- Contact Section -->
+    <url>
+        <loc>https://www.hurupgaming.com/#contact</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    
+    <!-- Product Pages (add when created) -->
+    <url>
+        <loc>https://www.hurupgaming.com/products/phygital-chess</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+        <image:image>
+            <image:loc>https://www.hurupgaming.com/assets/phygital-chess-india.webp</image:loc>
+            <image:title>Phygital Chess Board - KineBlox</image:title>
+        </image:image>
+    </url>
+    
+    <url>
+        <loc>https://www.hurupgaming.com/products/phygital-ludo</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+        <image:image>
+            <image:loc>https://www.hurupgaming.com/assets/phygital-ludo-india.webp</image:loc>
+            <image:title>Phygital Ludo Game - KineBlox</image:title>
+        </image:image>
+    </url>
+    
+    <url>
+        <loc>https://www.hurupgaming.com/products/phygital-cards</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+        <image:image>
+            <image:loc>https://www.hurupgaming.com/assets/phygital-rummy-cards-india.webp</image:loc>
+            <image:title>Phygital Card Games Rummy - KineBlox</image:title>
+        </image:image>
+    </url>
+    
+    <!-- Blog Section (add blog posts here) -->
+    <url>
+        <loc>https://www.hurupgaming.com/blog</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.hurupgaming.com/blog/best-phygital-board-games-india</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.hurupgaming.com/blog/rummy-card-games-guide</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.hurupgaming.com/blog/chess-online-india-guide</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <url>
+        <loc>https://www.hurupgaming.com/blog/what-is-phygital-gaming</loc>
+        <lastmod>2026-01-29</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+</urlset>
