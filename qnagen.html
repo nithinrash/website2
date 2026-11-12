@@ -402,7 +402,7 @@
     <script>
         /* ===================== CONFIG ===================== */
         const CLOUDFLARE_AI_URL = "https://hurup-groq-proxy.nkrash91.workers.dev";
-        let currentModel = "llama-3.3-70b";
+        let currentModel = "gpt-oss-120b";
 
         /* ===================== DOM & UTILS ===================== */
         const $ = s => document.querySelector(s);
@@ -1450,7 +1450,7 @@ Output ONLY the label.`;
         async function fetchBestModel() {
             try {
                 const badge = $('#model-badge');
-                badge.textContent = "Workers AI Llama 3.3 70B";
+                badge.textContent = "Krutrim 120B (Active)";
                 badge.className = "badge bg-success text-white bg-opacity-75 border border-success";
             } catch (e) {
                 console.error("Model fetch error:", e);
@@ -1458,7 +1458,7 @@ Output ONLY the label.`;
         }
 
         fetchBestModel();
-        renderUser("Cloudflare Workers AI (Llama 3.3 70B) Ready. Type a topic or upload an image!");
+        renderUser("Krutrim 120B AI Ready! Type any topic or upload notes/images to create a quiz.");
     </script>
 </body>
 
