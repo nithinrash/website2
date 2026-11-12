@@ -1074,14 +1074,14 @@
             // Sexual content
             'sex', 'sexual', 'porn', 'pornography', 'explicit', 'nude',
             'naked', 'erotic', 'orgasm', 'genital', 'penis', 'vagina',
-            'intercourse', 'fetish', 'hentai', 'xxx', 'nsfw', 'prostitut',
+            'intercourse', 'fetish', 'hentai', 'xxx', 'nsfw', 'prostitute', 'prostitution',
             'brothel', 'stripper',
             // Drugs & substances
             'cocaine', 'heroin', 'meth', 'methamphetamine', 'marijuana',
             'cannabis', 'weed', 'lsd', 'ecstasy', 'narcotic', 'overdose',
-            'drug abuse', 'crack', 'opium', 'fentanyl',
+            'crack', 'opium', 'fentanyl',
             // Alcohol (excessive context)
-            'drunk', 'alcoholism', 'binge drinking', 'intoxicat',
+            'drunk', 'alcoholism', 'intoxicated', 'intoxication',
             // Profanity
             'fuck', 'shit', 'ass', 'bitch', 'damn', 'bastard', 'crap',
             'dick', 'cunt', 'whore', 'slut',
@@ -1097,9 +1097,12 @@
         function contentSafetyCheck(rows) {
             const issues = [];
             for (const row of rows) {
-                const combined = row.join(' ').toLowerCase();
+                const text = row.join(' ');
                 for (const word of BLOCKED_WORDS) {
-                    if (combined.includes(word)) {
+                    // Match whole standalone words only, avoiding false positives (e.g. 'classic', 'pass', 'skill')
+                    const escaped = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+                    if (regex.test(text)) {
                         issues.push(`Blocked word "${word}" found in row: "${row[2] || row[1]}"`);
                     }
                 }
