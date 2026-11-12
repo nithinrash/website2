@@ -401,10 +401,8 @@
 
     <script>
         /* ===================== CONFIG ===================== */
-        const GROQ_API_KEY = "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"; // NOTE: Remember to keep this private in production!
-        const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-        const GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models";
-        let currentModel = "llama-3.3-70b-versatile"; // Safe default
+        const CLOUDFLARE_AI_URL = "https://hurup-groq-proxy.nkrash91.workers.dev";
+        let currentModel = "llama-3.3-70b";
 
         /* ===================== DOM & UTILS ===================== */
         const $ = s => document.querySelector(s);
@@ -931,28 +929,22 @@
         /* ===================== API LOGIC ===================== */
 
         async function groqChat(messages, useJsonMode = false) {
-            if (!GROQ_API_KEY || GROQ_API_KEY.includes("YOUR_")) {
-                showToast("Missing Groq API Key!");
-                throw new Error("Missing Key");
-            }
-
             const payload = {
                 model: currentModel,
                 messages: messages,
                 temperature: useJsonMode ? 0.1 : 0.5,
-                max_tokens: 4096,
-                response_format: useJsonMode ? { type: "json_object" } : undefined
+                max_tokens: 4096
             };
 
-            const res = await fetch(GROQ_URL, {
+            const res = await fetch(CLOUDFLARE_AI_URL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error?.message || "Groq API Error");
+                const err = await res.json().catch(() => ({ error: "AI Service Error" }));
+                throw new Error(err.error?.message || err.error || "AI Generation Error");
             }
             const data = await res.json();
             return data.choices?.[0]?.message?.content || "";
@@ -1017,7 +1009,7 @@
             node.querySelector('.btn-save-browser').onclick = () => {
                 const jsonStr = JSON.stringify(obj, null, 2);
                 const encrypted = encrypt(jsonStr);
-                const targetUrl = 'https://hurup.in/dist/index.html#import=' + encodeURIComponent(encrypted);
+                const targetUrl = 'dist/index.html#import=' + encodeURIComponent(encrypted);
                 showToast('Opening game with your custom questions...');
                 window.open(targetUrl, '_blank');
             };
@@ -1458,54 +1450,15 @@ Output ONLY the label.`;
         async function fetchBestModel() {
             try {
                 const badge = $('#model-badge');
-                if (!GROQ_API_KEY || GROQ_API_KEY.includes("YOUR_")) {
-                    badge.textContent = "Missing API Key";
-                    return;
-                }
-
-                const res = await fetch(GROQ_MODELS_URL, {
-                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}` }
-                });
-
-                if (!res.ok) throw new Error("Failed to fetch models");
-
-                const data = await res.json();
-                const models = data.data;
-
-                const priorities = [
-                    "llama-3.3-70b-versatile",
-                    "llama-3.1-70b-versatile",
-                    "llama3-70b-8192"
-                ];
-
-                let selected = null;
-
-                for (const p of priorities) {
-                    if (models.find(m => m.id === p)) {
-                        selected = p;
-                        break;
-                    }
-                }
-
-                if (!selected) {
-                    const fallback = models.find(m => m.id.includes("llama") && m.id.includes("70b"));
-                    if (fallback) selected = fallback.id;
-                }
-
-                if (selected) {
-                    currentModel = selected;
-                }
-
-                badge.textContent = `Groq ${currentModel}`;
-
+                badge.textContent = "Workers AI Llama 3.3 70B";
+                badge.className = "badge bg-success text-white bg-opacity-75 border border-success";
             } catch (e) {
                 console.error("Model fetch error:", e);
-                $('#model-badge').textContent = `Groq ${currentModel} (Default)`;
             }
         }
 
         fetchBestModel();
-        renderUser("Bootstrap 5 + Groq Ready. Type a topic or upload an image!");
+        renderUser("Cloudflare Workers AI (Llama 3.3 70B) Ready. Type a topic or upload an image!");
     </script>
 </body>
 
