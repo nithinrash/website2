@@ -1119,15 +1119,19 @@ Keep reasoning very brief and output the TSV rows directly without preamble.
 - Think of this as content for a children's classroom quiz game.
 - When in doubt, keep it wholesome and positive.
 
-STRUCTURE: Generate exactly 16 Q&A rows + 8 confuser answers:
-- Rows 1-8: First set of 8 questions (Group A)
-- Rows 9-16: Second set of 8 questions (Group B) - linked subtopics
-- Rows 17-24: Confuser answers (Keyword="CX", Question="CX", Answer=Specific Confuser)
+STRUCTURE: Generate exactly 24 TSV rows for the wheel game:
+- Rows 1-8 (Group A): 8 distinct questions. Keywords 1-2 words. Answers 1-3 words.
+- Rows 9-16 (Group B): 8 questions matching the same 8 categories as Rows 1-8 (e.g. Row 1 and Row 9 are related but have distinct answers).
+- Rows 17-24 (Confusers): 8 plausible WRONG answers (distractors) that will appear on the answer wheel. For example, if Row 1 answer is "PlayStation 5" and Row 9 answer is "Xbox Series X", Row 17 answer must be a realistic alternative like "Nintendo Switch".
 
 RULES:
-- Keyword: Clean display label for the wheel (1-2 natural words with spaces, Title Case, max 15 chars, e.g. "Crash Hero", "DualShock", "First Console"). Must be natural readable English, NEVER squashed abbreviations (like 'PlatformerGa') or appended letters. All 16 keywords must be unique.
-- Question: 10-25 words, clear, fun, and kid-friendly.
-- Answer: 1-4 words.
+- Keyword (Rows 1-16): Clean display label for the wheel (1-2 natural words with spaces, Title Case, max 15 chars, e.g. "Crash Hero", "DualShock", "First Console"). Must be natural readable English, NEVER squashed abbreviations. All 16 keywords must be unique.
+- Question (Rows 1-16): 10-25 words, clear, fun, and kid-friendly.
+- Answer (Rows 1-16): 1-3 words, accurate and distinct.
+- CRITICAL FOR ROWS 17-24 (Confuser answers):
+  - Keyword column: "Confuser"
+  - Question column: "None"
+  - Answer column: Must be a REAL, PLAUSIBLE answer name (1-3 words). NEVER use placeholder words like "CX", "cxplay", "cx link", or "Confuser". It must look like a real, convincing answer option to players!
 CRITICAL: EXACTLY 24 ROWS. ALL 24 ANSWERS MUST BE UNIQUE STRINGS. NO DUPLICATES ALLOWED.`;
         }
 
