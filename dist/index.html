@@ -352,7 +352,18 @@
         </div>
 
         <!-- MAIN SCRIPT -->
-
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('custom-id-input');
+            const idBtn = document.getElementById('id-login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            if (input) {
+                input.value = '';
+                if (idBtn) idBtn.addEventListener('click', () => { input.value = ''; });
+                if (logoutBtn) logoutBtn.addEventListener('click', () => { input.value = ''; });
+            }
+        });
+    </script>
 </body>
 
 </html>
