@@ -654,11 +654,17 @@
         /* ===================== CRYPTO LOGIC ===================== */
         const SECRET_KEY = "HURUP_SECURE_KEY_v1";
         function encrypt(text) {
-            let result = '';
-            for (let i = 0; i < text.length; i++) {
-                result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+            try {
+                const utf8 = unescape(encodeURIComponent(text));
+                let result = '';
+                for (let i = 0; i < utf8.length; i++) {
+                    result += String.fromCharCode(utf8.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+                }
+                return btoa(result);
+            } catch (e) {
+                console.warn("Encrypt fallback:", e);
+                return btoa(unescape(encodeURIComponent(text)));
             }
-            return btoa(result);
         }
 
         /* ===================== GAME LOGIC ===================== */
@@ -1000,18 +1006,32 @@
             const node = tpl.firstElementChild;
             node.querySelector('[data-json]').textContent = JSON.stringify(obj, null, 2);
 
-            //      const btnPlay = document.createElement('button');
-            //      btnPlay.className = 'btn btn-sm btn-primary d-flex align-items-center gap-1';
-            //      btnPlay.innerHTML = '<i class="bi bi-play-fill"></i> Play Preview';
-            //      btnPlay.onclick = () => launchGame(obj);
-            //      node.querySelector('.card-footer').appendChild(btnPlay);
+            // Wheel Preview button inside qnagen
+            const btnPlayPreview = document.createElement('button');
+            btnPlayPreview.className = 'btn btn-sm btn-outline-success d-flex align-items-center gap-1';
+            btnPlayPreview.innerHTML = '<i class="bi bi-eye-fill"></i> Wheel Preview';
+            btnPlayPreview.onclick = () => launchGame(obj);
+            node.querySelector('.card-footer').appendChild(btnPlayPreview);
 
+            // Play Full Game button
             node.querySelector('.btn-save-browser').onclick = () => {
-                const jsonStr = JSON.stringify(obj, null, 2);
-                const encrypted = encrypt(jsonStr);
-                const targetUrl = 'dist/index.html#import=' + encodeURIComponent(encrypted);
-                showToast('Opening game with your custom questions...');
-                window.open(targetUrl, '_blank');
+                try {
+                    const jsonStr = JSON.stringify(obj, null, 2);
+                    // 1. Save directly into shared localStorage for the game
+                    localStorage.setItem('HURUP_DEV_OVERRIDE_DATA', jsonStr);
+                    showToast('Launching GearQuiz with your custom questions...');
+
+                    // 2. Open game (with popup blocker fallback)
+                    const targetUrl = 'dist/index.html';
+                    const win = window.open(targetUrl, '_blank');
+                    if (!win || win.closed || typeof win.closed === 'undefined') {
+                        window.location.href = targetUrl;
+                    }
+                } catch (e) {
+                    console.error('Play click error:', e);
+                    showToast('Opening game...');
+                    window.location.href = 'dist/index.html';
+                }
             };
 
             chat.appendChild(node);
@@ -1295,100 +1315,39 @@ ${extractedText}
 
                 renderTable(parsed.rows);
 
-                const keywords = [];
-                const usedKeywords = new Set();
+                // Use the high-quality keywords already generated in the TSV by the 120B model
+                const keywords = parsed.rows.slice(0, 16).map((row, idx) => {
+                    let kw = (row[1] || `Item${idx + 1}`).trim().replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 16);
+                    return kw || `Item${idx + 1}`;
+                });
 
-                for (let i = 0; i < 16; i++) {
-                    clearThinking(); renderThinking(`Generating keyword ${i + 1}/16...`);
-
-                    const question = parsed.rows[i][2];
-                    const answer = parsed.rows[i][3];
-                    const usedList = Array.from(usedKeywords).join(', ');
-
-                    const prompt = `Generate a short, meaningful label (1-2 words, max 16 chars) for this question. It will be displayed on a small game wheel.
-Question: "${question}"
-Answer: "${answer}"
-
-RULES:
-1. Label must NOT contain any words from the Answer.
-2. Label must NOT be any of these already used: [${usedList}]
-3. Label must catch the KEY concept.
-4. Use Title Case. Spaces are allowed. NO special chars.
-Output ONLY the label.`;
-
-                    let attempts = 0;
-                    let success = false;
-
-                    while (!success && attempts < 3) {
-                        try {
-                            attempts++;
-                            const resp = await groqChat([
-                                { role: 'system', content: 'You are a keyword generator. Output only a short label.' },
-                                { role: 'user', content: prompt }
-                            ]);
-
-                            let keyword = resp.trim().replace(/[^a-zA-Z\s]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
-
-                            if (keyword && keyword.length > 2 && !usedKeywords.has(keyword.toLowerCase())) {
-                                keywords.push(keyword);
-                                usedKeywords.add(keyword.toLowerCase());
-                                success = true;
-                            } else if (attempts === 3) {
-                                const stopWords = ['what', 'which', 'who', 'how', 'when', 'where', 'is', 'are', 'was', 'were', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
-                                keyword = parsed.rows[i][2].split(' ')
-                                    .map(w => w.replace(/[^a-zA-Z]/g, ''))
-                                    .find(w => w.length > 3 && !stopWords.includes(w.toLowerCase()) && !usedKeywords.has(w.toLowerCase()))
-                                    || `Question${i + 1}`;
-
-                                if (usedKeywords.has(keyword.toLowerCase())) keyword += (i + 1);
-
-                                keywords.push(keyword.slice(0, 16));
-                                usedKeywords.add(keyword.toLowerCase());
-                                success = true;
-                            }
-                        } catch (e) {
-                            console.warn(`Keyword ${i + 1} attempt ${attempts} failed:`, e);
-                            if (attempts === 3) {
-                                keywords.push(`Question${i + 1}`);
-                                usedKeywords.add(`question${i + 1}`);
-                                success = true;
-                            } else {
-                                await new Promise(r => setTimeout(r, 1000));
-                            }
-                        }
-                    }
-                }
-
-                clearThinking(); renderThinking("Building final JSON...");
-                const jsonResp = await groqChat([{ role: 'system', content: buildJSONSystem(tsv, topic) }, { role: 'user', content: "Generate JSON" }], true);
-                let obj = tryParseJSON(jsonResp);
-
-                if (obj && obj.qas && parsed.rows) {
-                    const qasRows = parsed.rows.slice(0, 16);
-                    obj.qas = qasRows.map((row, idx) => ({
-                        key: keywords[idx] || `Item${idx + 1}`,
+                // Assemble game wheel object directly from TSV data (instant & reliable)
+                const obj = {
+                    qas: parsed.rows.slice(0, 16).map((row, idx) => ({
+                        key: keywords[idx],
                         question: row[2],
                         answer: row[3]
-                    }));
+                    })),
+                    innerOrder: keywords.slice(0, 16),
+                    outerFlags: []
+                };
 
-                    obj.innerOrder = keywords.slice(0, 16);
-                    let allFlags = parsed.rows.slice(0, 24).map(r => r[3]);
+                let allFlags = parsed.rows.slice(0, 24).map(r => r[3]);
 
-                    for (let i = 0; i < 8; i++) {
-                        const indices = [i, i + 8, i + 16];
-                        const items = indices.map(idx => allFlags[idx]);
+                for (let i = 0; i < 8; i++) {
+                    const indices = [i, i + 8, i + 16];
+                    const items = indices.map(idx => allFlags[idx]);
 
-                        for (let j = items.length - 1; j > 0; j--) {
-                            const k = Math.floor(Math.random() * (j + 1));
-                            [items[j], items[k]] = [items[k], items[j]];
-                        }
-                        indices.forEach((idx, k) => { allFlags[idx] = items[k]; });
+                    for (let j = items.length - 1; j > 0; j--) {
+                        const k = Math.floor(Math.random() * (j + 1));
+                        [items[j], items[k]] = [items[k], items[j]];
                     }
-
-                    const firstFlag = allFlags.shift();
-                    allFlags.push(firstFlag);
-                    obj.outerFlags = allFlags;
+                    indices.forEach((idx, k) => { allFlags[idx] = items[k]; });
                 }
+
+                const firstFlag = allFlags.shift();
+                allFlags.push(firstFlag);
+                obj.outerFlags = allFlags;
 
                 const val = validateJSON(obj, parsed.rows);
 
@@ -1396,7 +1355,7 @@ Output ONLY the label.`;
                 if (val.ok) renderJSON(obj);
                 else {
                     renderError("JSON Validation Failed. Showing raw.");
-                    renderJSON(obj || { error: "Parse Failed", raw: jsonResp });
+                    renderJSON(obj || { error: "Validation Failed" });
                 }
 
             } catch (e) {
