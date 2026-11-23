@@ -42,143 +42,7 @@
     .attachment-name { display:block; max-width:130px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
     .app-footer { padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px)) !important; }
 
-    /* Small emoji-mood difficulty slider, directly beneath Send. */
-    .send-stack {
-      flex:0 0 118px;
-      width:118px;
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      align-items:stretch;
-      gap:3px;
-    }
-    .send-stack #btn-send {
-      justify-content:center;
-      min-height:38px;
-      padding-inline:9px !important;
-    }
-    .difficulty-widget {
-      --level-accent:#c860ef;
-      width:100%;
-      box-sizing:border-box;
-      padding:0 2px;
-      background:transparent;
-      border:0;
-      color:var(--bs-body-color);
-    }
-    .difficulty-widget[data-level="easy"] { --level-accent:#ffb334; }
-    .difficulty-widget[data-level="medium"] { --level-accent:#eb3d87; }
-    .difficulty-widget[data-level="hard"] { --level-accent:#7351e9; }
-    .difficulty-slider-area { width:100%; }
-    .mood-slider {
-      position:relative;
-      width:100%;
-      height:29px;
-      touch-action:pan-y;
-    }
-    /* Native input remains keyboard accessible, with the colorful custom track below it. */
-    #difficulty-range {
-      position:absolute;
-      z-index:3;
-      inset:0;
-      display:block;
-      width:100%;
-      height:29px;
-      padding:0;
-      margin:0;
-      opacity:0;
-      cursor:grab;
-      -webkit-appearance:none;
-      appearance:none;
-      touch-action:pan-y;
-    }
-    #difficulty-range:active { cursor:grabbing; }
-    #difficulty-range::-webkit-slider-thumb {
-      -webkit-appearance:none;
-      appearance:none;
-      width:29px;
-      height:29px;
-      background:transparent;
-      border:0;
-    }
-    #difficulty-range::-moz-range-thumb {
-      width:29px;
-      height:29px;
-      background:transparent;
-      border:0;
-    }
-    .mood-rail {
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-      border-radius:25px;
-    }
-    .mood-color-track {
-      position:absolute;
-      left:13px;
-      right:13px;
-      top:11px;
-      height:9px;
-      border-radius:99px;
-      background:linear-gradient(90deg,#ffd46e 0%,#ff9441 24%,#ff3267 49%,#d000ad 72%,#5547fa 100%);
-      box-shadow:inset 0 1px 2px #00000017,0 1px 3px #00000012;
-    }
-    /* Thumb positions match the native range's three snap points. */
-    .difficulty-face {
-      position:absolute;
-      top:0;
-      left:50%;
-      width:29px;
-      height:29px;
-      transform:translateX(-50%);
-      border-radius:50%;
-      filter:drop-shadow(0 2px 2px #00000026);
-      transition:left .2s cubic-bezier(.2,.75,.25,1),filter .2s;
-    }
-    .difficulty-face svg {display:block;width:100%;height:100%;}
-    .difficulty-widget[data-level="easy"] .difficulty-face {left:14.5px;}
-    .difficulty-widget[data-level="medium"] .difficulty-face {left:50%;}
-    .difficulty-widget[data-level="hard"] .difficulty-face {left:calc(100% - 14.5px);}
-    .face-expression {opacity:0;transition:opacity .14s ease-in-out;}
-    .difficulty-widget[data-level="easy"] .face-expression.easy,
-    .difficulty-widget[data-level="medium"] .face-expression.medium,
-    .difficulty-widget[data-level="hard"] .face-expression.hard {opacity:1;}
-    #difficulty-range:focus-visible + .mood-rail {outline:2px solid var(--bs-primary);outline-offset:3px;}
-    #difficulty-range:disabled {cursor:not-allowed;}
-    #difficulty-range:disabled + .mood-rail {opacity:.6;}
-    .difficulty-stops {
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      align-items:center;
-      gap:0;
-      margin-top:-1px;
-    }
-    .difficulty-stops button {
-      min-height:14px;
-      padding:0;
-      border:0;
-      background:transparent;
-      border-radius:3px;
-      color:var(--bs-secondary-color);
-      font-size:9px;
-      font-weight:600;
-      line-height:1.3;
-      cursor:pointer;
-    }
-    .difficulty-stops button:first-child {text-align:left;}
-    .difficulty-stops button:last-child {text-align:right;}
-    .difficulty-stops button.active {color:var(--bs-body-color);font-weight:800;}
-    .difficulty-stops button:focus-visible {outline:2px solid var(--bs-primary);outline-offset:1px;}
-    .difficulty-stops button:disabled {opacity:.65;cursor:not-allowed;}
-    [data-bs-theme="dark"] .mood-color-track {
-      box-shadow:inset 0 1px 2px #0005,0 0 6px #d000ad20;
-    }
-    [data-bs-theme="dark"] .difficulty-face {filter:drop-shadow(0 2px 4px #0009);}
-    @media(max-width:370px) {
-      .send-stack {flex-basis:108px;width:108px;}
-      .difficulty-stops button {font-size:8.5px;}
-    }
-    @media(prefers-reduced-motion:reduce){.difficulty-widget *, .difficulty-widget {transition:none!important}}
+    #btn-send { min-height:38px; padding-inline:1rem; white-space:nowrap; }
     .toast-container { z-index:1100; }
   </style>
 </head>
@@ -207,61 +71,9 @@
         <button id="btn-attach" class="btn btn-outline-secondary flex-shrink-0" title="Attach Image or PDF"><i class="bi bi-paperclip"></i></button>
         <button id="btn-camera" class="btn btn-outline-secondary flex-shrink-0" title="Open Camera"><i class="bi bi-camera-fill"></i></button>
         <textarea id="input" rows="1" class="form-control border-0 shadow-none flex-grow-1" style="resize:none;max-height:110px;min-width:0" placeholder="Type a topic or attach study material"></textarea>
-        <div class="send-stack">
-          <button id="btn-send" class="btn btn-primary d-flex align-items-center gap-2"><i class="bi bi-send-fill"></i><span class="d-none d-sm-inline">Send</span></button>
-          <div class="difficulty-widget" id="difficulty-select" data-level="medium" title="Slide to choose quiz difficulty">
-            <span id="difficulty-current" class="visually-hidden" aria-live="polite">Medium</span>
-            <div class="difficulty-slider-area">
-              <div class="mood-slider">
-                <input id="difficulty-range" type="range" min="0" max="2" step="1" value="1"
-                       aria-label="Quiz difficulty" aria-valuetext="Medium">
-                <div class="mood-rail" aria-hidden="true">
-                  <div class="mood-color-track"></div>
-                  <div class="difficulty-face">
-                    <!-- One consistent yellow smiley with three mood expressions. -->
-                    <svg viewBox="0 0 40 40" focusable="false" aria-hidden="true">
-                      <circle cx="20" cy="20" r="19" fill="#f1ae00"/>
-                      <circle cx="21" cy="18" r="18" fill="#ffcb0d"/>
-                      <path d="M9 8 Q19 0 30 9" stroke="#ffe995" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>
-                      <g class="face-expression easy">
-                        <ellipse cx="11.6" cy="23.5" rx="3.4" ry="1.9" fill="#ff7096"/>
-                        <ellipse cx="29.4" cy="23.5" rx="3.4" ry="1.9" fill="#ff7096"/>
-                        <circle cx="14" cy="17" r="2.2" fill="#35231b"/><circle cx="27" cy="17" r="2.2" fill="#35231b"/>
-                        <circle cx="14.5" cy="16.3" r=".65" fill="white"/><circle cx="27.5" cy="16.3" r=".65" fill="white"/>
-                        <path d="M13 24 Q20.5 35 28 24 Z" fill="#422015"/>
-                      </g>
-                      <g class="face-expression medium">
-                        <ellipse cx="11.1" cy="24.5" rx="2.4" ry="1.3" fill="#ff8f9c"/>
-                        <ellipse cx="29.8" cy="24.5" rx="2.4" ry="1.3" fill="#ff8f9c"/>
-                        <path d="M11.5 13.6 L17 12.8 M24 12.8 L29 13.5" stroke="#5d351a" stroke-width="1.8" stroke-linecap="round"/>
-                        <circle cx="14" cy="18.3" r="2" fill="#35231b"/><circle cx="27" cy="18.3" r="2" fill="#35231b"/>
-                        <circle cx="14.5" cy="17.7" r=".6" fill="white"/><circle cx="27.5" cy="17.7" r=".6" fill="white"/>
-                        <path d="M16 27 Q21 24.5 25 27" stroke="#422015" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-                        <path d="M29 25 Q27 22 30 20 Q32 20 32 22" stroke="#422015" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-                      </g>
-                      <g class="face-expression hard">
-                        <ellipse cx="11.5" cy="24" rx="2.8" ry="1.45" fill="#ff7596"/>
-                        <ellipse cx="29.4" cy="24" rx="2.8" ry="1.45" fill="#ff7596"/>
-                        <path d="M10 13 L16.8 15 M24 15 L30.3 13" stroke="#66401d" stroke-width="2.2" stroke-linecap="round"/>
-                        <ellipse cx="14" cy="19" rx="1.95" ry="2.5" fill="#35231b"/>
-                        <ellipse cx="27" cy="19" rx="1.95" ry="2.5" fill="#35231b"/>
-                        <circle cx="14.4" cy="18.3" r=".6" fill="white"/><circle cx="27.4" cy="18.3" r=".6" fill="white"/>
-                        <rect x="15" y="25.1" width="11.2" height="4.7" rx="1.8" fill="#fff9e6" stroke="#6e3b18" stroke-width="1"/>
-                        <path d="M18.7 25.4 L18.7 29.4 M22.3 25.4 L22.3 29.4" stroke="#aa8b67" stroke-width=".7"/>
-                        <path d="M32.1 17 Q35 21 32.6 22.6 Q30 22.6 30.4 20.5 Z" fill="#8dddf9" stroke="#6bc8ec" stroke-width=".6"/>
-                      </g>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-              <div class="difficulty-stops">
-                <button type="button" data-difficulty="easy" aria-label="Set easy difficulty">Easy</button>
-                <button type="button" data-difficulty="medium" class="active" aria-label="Set medium difficulty">Medium</button>
-                <button type="button" data-difficulty="hard" aria-label="Set hard difficulty">Hard</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <button id="btn-send" class="btn btn-primary d-flex align-items-center justify-content-center gap-2 flex-shrink-0">
+          <i class="bi bi-send-fill"></i><span class="d-none d-sm-inline">Send</span>
+        </button>
       </div>
     </div>
   </footer>
@@ -569,19 +381,96 @@ $('#cam-flash').onclick = toggleFlash;
 $('#cam-shutter').onclick = capturePhoto;
 
 /* =================== AI ENDPOINT =================== */
-async function groqChat(messages, jsonMode=false) {
-  const response = await fetch(CLOUDFLARE_AI_URL,{
-    method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:MODEL,messages,temperature:jsonMode ? 0.15 : 0.35,max_tokens:12000})
-  });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(typeof body.error === 'string' ? body.error : body.error?.message || `AI HTTP ${response.status}`);
+// GPT-OSS can sometimes spend its output budget on reasoning and return no
+// visible content. Keep retries limited, lower reasoning effort on retry, and
+// capture finish_reason in the console for diagnosing proxy/model failures.
+const aiPause = ms => new Promise(resolve => setTimeout(resolve,ms));
+function readAIContent(data) {
+  const choice=data?.choices?.[0];
+  const content=choice?.message?.content ?? choice?.text ?? data?.output_text ?? data?.content ?? data?.response;
+  if (typeof content==='string') return content.trim();
+  if (Array.isArray(content)) return content.map(part=>typeof part==='string'?part:(part?.text||'')).join('\n').trim();
+  if (content && typeof content==='object' && (Array.isArray(content.rows)||Array.isArray(content.items))) return JSON.stringify(content);
+  return '';
+}
+async function groqChat(messages,jsonMode=false,options={}) {
+  let minimalPayload=false, lastError;
+  const maxTokens=options.maxTokens ?? (jsonMode ? 12000 : 8192);
+  for (let attempt=0;attempt<3;attempt++) {
+    const payload={
+      model:MODEL,messages,
+      temperature:jsonMode ? 0.15 : 0.35,
+      max_tokens:maxTokens
+    };
+    if (!minimalPayload) {
+      // Groq GPT-OSS supports low/medium/high. Lower reasoning on repeats
+      // preserves completion tokens for the actual JSON output.
+      payload.reasoning_effort=attempt===0 ? (options.reasoningEffort || 'medium') : 'low';
+      if (jsonMode) payload.response_format={type:'json_object'};
+    }
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),90000);
+    try {
+      const response=await fetch(CLOUDFLARE_AI_URL,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload),signal:controller.signal
+      });
+      if (!response.ok) {
+        const rawError=await response.text().catch(()=>'');
+        let message=rawError.slice(0,300);
+        try {
+          const parsed=JSON.parse(rawError);
+          message=(typeof parsed.error==='string' ? parsed.error : parsed.error?.message) || parsed.message || message;
+        } catch {}
+        const error=new Error(`AI HTTP ${response.status}${message ? ': '+message : ''}`);
+        error.status=response.status;
+        lastError=error;
+        // If the Cloudflare proxy does not forward these optional Groq fields,
+        // retry with the original legacy request format instead of failing.
+        if ((response.status===400 || response.status===422) && !minimalPayload) {
+          console.warn('Retrying AI with proxy-compatible request after HTTP',response.status);
+          minimalPayload=true;
+          continue;
+        }
+        if ([408,429,500,502,503,504].includes(response.status) && attempt<2) {
+          const seconds=Number(response.headers?.get?.('Retry-After'));
+          const wait=Number.isFinite(seconds) && seconds>0 ? Math.min(seconds*1000,15000) : (response.status===429?1800:800)*(attempt+1);
+          await aiPause(wait);
+          continue;
+        }
+        if (response.status===429) {
+          error.message='AI service rate limit reached. Please try again after a short interval.';
+        }
+        throw error;
+      }
+      const data=await response.json();
+      const content=readAIContent(data);
+      if (content) return content;
+      const finishReason=data?.choices?.[0]?.finish_reason || 'unknown';
+      const reasoningTokens=data?.usage?.completion_tokens_details?.reasoning_tokens;
+      console.warn('AI response had no visible content',{
+        finishReason,reasoningTokens,attempt:attempt+1,
+        completionTokens:data?.usage?.completion_tokens
+      });
+      lastError=new Error(`AI returned an empty response (finish reason: ${finishReason})`);
+      if (attempt<2) {
+        if (attempt===1) minimalPayload=true;
+        await aiPause(600*(attempt+1));
+        continue;
+      }
+      throw lastError;
+    } catch(error) {
+      lastError=error;
+      if ((error.name==='AbortError' || error instanceof TypeError) && attempt<2) {
+        console.warn('Temporary AI network/timeout error; retrying',error);
+        await aiPause(800*(attempt+1));
+        continue;
+      }
+      if (error.name==='AbortError') throw new Error('AI request timed out; try again or check the Cloudflare proxy.');
+      throw error;
+    } finally {clearTimeout(timeout);}
   }
-  const data = await response.json();
-  const result = data.choices?.[0]?.message?.content;
-  if (typeof result !== 'string' || !result.trim()) throw new Error('AI returned an empty response');
-  return result;
+  throw lastError || new Error('AI request failed after retries');
 }
 
 /* =================== KID SAFETY =================== */
@@ -737,44 +626,13 @@ function parseJSON(raw) {
   }
 }
 
-/* =================== DIFFICULTY & PROMPTS =================== */
+/* =================== FIXED QUIZ DIFFICULTY =================== */
+// Every quiz always uses the same balanced, medium-level instructions.
+const QUIZ_DIFFICULTY = 'medium';
 const DIFFICULTIES = {
-  easy: `EASY — beginner / elementary. Every question should be solvable through one basic fact or one simple inference. Use familiar everyday examples, accessible vocabulary and direct but non-revealing clues. Avoid obscure dates, advanced concepts or multi-part reasoning.`,
-  medium: `MEDIUM — intermediate / good general-knowledge adult. Questions require thoughtful comparison, applications of learned concepts, or two connected facts rather than simplistic recall. Use a mix of moderately challenging and less familiar knowledge, but avoid specialized academic jargon where possible.`,
-  hard: `HARD — EXTREME / EXPERT / OLYMPIAD LEVEL. Deliberately produce VERY, VERY difficult questions that challenge highly educated adults, advanced university students and subject specialists. Never make Hard just slightly harder than Medium. Prefer precise, specialized, difficult but well-established material. Each question should require at least TWO independent pieces of subject knowledge, careful synthesis, non-obvious comparison, advanced conceptual reasoning, or advanced real-world application. Use nuanced scientific/technical/historical distinctions appropriate to the topic and narrow clues that still allow exactly one defensible answer. No elementary facts, first-page encyclopedic definitions, obvious famous names, easy single-hop recall, or childish trivia. No impossible riddles, artificial obscurity, misleading phrasing, subjective ambiguity or invented facts. Make the hardest defensible questions possible within the chosen topic and provided evidence.`
+  medium: `MEDIUM — thoughtful, classroom-friendly questions for a good general-knowledge audience. Go beyond the very easiest facts: use comparisons, applications and relationships between familiar ideas, while avoiding expert-only trivia and overly complicated terminology. Each question must be factual, unambiguous and have one short correct answer.`
 };
-const DIFFICULTY_LEVELS=['easy','medium','hard'];
-const DIFFICULTY_LIMITS={easy:[10,25],medium:[12,30],hard:[18,48]};
-function getDifficulty() {
-  return DIFFICULTY_LEVELS[Number($('#difficulty-range').value)] || 'medium';
-}
-function setDifficulty(value) {
-  const level=DIFFICULTY_LEVELS.includes(value)?value:'medium';
-  const slider=$('#difficulty-range');
-  slider.value=String(DIFFICULTY_LEVELS.indexOf(level));
-  slider.setAttribute('aria-valuetext',level[0].toUpperCase()+level.slice(1));
-  $('#difficulty-select').dataset.level=level;
-  $('#difficulty-current').textContent=level[0].toUpperCase()+level.slice(1);
-  document.querySelectorAll('[data-difficulty]').forEach(button=>{
-    const active=button.dataset.difficulty===level;
-    button.classList.toggle('active',active);
-    button.setAttribute('aria-pressed',String(active));
-  });
-}
-try {
-  const saved=localStorage.getItem('HURUP_DIFFICULTY');
-  if(saved && Object.prototype.hasOwnProperty.call(DIFFICULTIES,saved)) setDifficulty(saved);
-  else setDifficulty('medium');
-} catch {setDifficulty('medium');}
-function updateDifficulty(value) {
-  if(generating) return;
-  setDifficulty(value);
-  try {localStorage.setItem('HURUP_DIFFICULTY',getDifficulty());} catch {}
-}
-$('#difficulty-range').addEventListener('input',()=>updateDifficulty(getDifficulty()));
-document.querySelectorAll('[data-difficulty]').forEach(button=>{
-  button.addEventListener('click',()=>updateDifficulty(button.dataset.difficulty));
-});
+const DIFFICULTY_LIMITS = {medium:[10,34]};
 function splitTopic(text) {
   return text.replace(/\b(make|generate|create|rows|table|questions|quiz)\b/gi,'').trim() || 'General Knowledge';
 }
@@ -800,7 +658,7 @@ RULES FOR ROWS 1–16:
 - Keyword must NOT equal or contain its answer, any answer word, obvious abbreviation or alias.
 - Question must NOT state its own answer or a direct alternate spelling of its answer.
 - Questions: ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, naturally phrased, accurate, with exactly one defensible answer. No ambiguous wording.
-- The difficulty is mandatory for all sixteen questions, not just a few. For HARD, require genuinely advanced reasoning and specialized subject knowledge throughout, with no easy warm-up questions. For MEDIUM, require some interpretation rather than common elementary recall. EASY must remain accessible.
+- All sixteen questions must consistently be medium difficulty: some thoughtful recall or reasoning, but never trivial or expert-only.
 - Keep the correct answer itself short (typically 1–3 words) even when the reasoning required is deep.
 - Answers: preferably 1–3 words, concise and distinctive.
 - Avoid vague clue keywords ("Question", "Item 3", "Guess").
@@ -812,7 +670,7 @@ ALL 24 ANSWERS: unique after ignoring spaces/case/punctuation; no placeholders.
 
 ${sourceRequirements(sourceText)}
 
-Before submitting, silently audit every question for the selected difficulty. If HARD, replace any item a typical school student could answer through simple recall with a rigorous, specialized, multi-concept question. Questions must remain accurately answerable and have concise answers. Verify 24 rows, unique clues/answers and no answer giveaways. Output JSON only.`;
+Before submitting, silently audit every question for clear medium-level difficulty. Verify 24 rows, unique clue keywords and answers, no answer giveaways and no ambiguous questions. Output JSON only.`;
 }
 async function repairRowsPrompt(topic,sourceText,difficulty,previous,issues,attempt) {
   const prompt=buildQuizPrompt(topic,sourceText,difficulty);
@@ -831,75 +689,105 @@ function ensureSufficient(raw) {
     throw new Error('The attached material does not contain enough usable information for 24 distinct answers. Add more study notes or pages.');
 }
 async function generateFullRows(topic,sourceText,difficulty) {
-  const system=buildQuizPrompt(topic,sourceText,difficulty);
-  let lastResponse='',lastIssues=[];
-  for(let attempt=0;attempt<3;attempt++) {
-    renderThinking(attempt===0 ? `Generating 24 ${difficulty} quiz rows...` : `Improving AI output (attempt ${attempt+1}/3)...`);
-    try {
-      const response=attempt===0 ? await groqChat([
-        {role:'system',content:system},
-        {role:'user',content:`Create the complete 24-row ${difficulty} quiz in the specified JSON format. Topic: ${topic}.`}
-      ],true) : await repairRowsPrompt(topic,sourceText,difficulty,lastResponse,lastIssues,attempt);
-      ensureSufficient(response);
-      lastResponse=response;
-      const rows=decodeAIResponse(response);
-      lastIssues=rowErrors(rows);
-      if(!lastIssues.length) return rows;
-      console.warn('AI output rejected:',lastIssues,'Sample:',response.slice(0,350));
-    } catch(error) {
-      if (/attached material does not contain/i.test(error.message)) throw error;
-      lastIssues=[error.message];
-      console.warn('AI generation retry:',error);
-    }
-  }
-  // Avoid the old "received 0 rows" dead end: make smaller, easier-to-format API calls.
-  renderThinking('Using smaller AI batches for reliable formatting...');
-  return await generateBatchedRows(topic,sourceText,difficulty,lastIssues);
+  // Asking for four rows at a time is much more reliable for GPT-OSS than
+  // asking for one long 24-row response, especially when reasoning is enabled.
+  return await generateBatchedRows(topic,sourceText,difficulty);
 }
+
+// Generate a group; if a long request fails, split it into smaller subgroups
+// (4 -> 2 -> 1). Partial valid responses are retained and only the missing
+// rows are requested again.
 async function generateBatchedRows(topic,sourceText,difficulty,previousIssues=[]) {
-  let all=[];
-  for(const start of [1,9,17]) {
-    let success=false,problem='';
-    for(let attempt=0;attempt<3 && !success;attempt++) {
-      renderThinking(`Generating rows ${start}–${start+7} (${difficulty}; batch ${start===1?1:start===9?2:3}/3)...`);
+  const all=[];
+  const batchSize=4;
+
+  async function generateSegment(start,count) {
+    let problem=previousIssues[0] || '';
+    const firstGroup=start<=8, secondGroup=start>=9 && start<=16;
+    const requirements=firstGroup
+      ? 'You are generating GROUP A (rows 1–8): each row must cover a DIFFERENT subcategory. Avoid reusing subcategories in prior accepted Group A rows.'
+      : secondGroup
+        ? 'You are generating GROUP B (rows 9–16): each row must match the subcategory of Group A row (its number minus 8), but test a DISTINCT answer. Consult the accepted Group A questions below.'
+        : 'You are generating CONFUSERS (rows 17–24): provide plausible incorrect answer alternatives relevant to the accepted questions, not the same correct answers.';
+    for (let attempt=0;attempt<3;attempt++) {
+      renderThinking('Generating questions...');
       const prior=all.map(r=>({number:Number(r[0]),keyword:r[1],question:r[2],answer:r[3]}));
-      const requirements=start===1 ? 'Create EIGHT different categories.' : start===9 ?
-        'Create 8 questions related respectively to the categories in rows 1–8, each with NEW correct answers.' :
-        'Create 8 tempting WRONG answer options for the preceding 16 questions, not correct answers.';
-      const system=`You create high-quality educational quiz content for a 16-question, 24-answer gear wheel.
-TOPIC: ${topic}. DIFFICULTY: ${DIFFICULTIES[difficulty] || DIFFICULTIES.medium}.
-CONTENT RULES: Classroom-friendly, factual, unambiguous, appropriate for ages 6+. ${requirements}
-Return ONLY a valid JSON object with EXACTLY EIGHT objects in its rows array, numbered ${start} through ${start+7}.
-Each object uses properties: number (integer), keyword (string), question (string), answer (string).
-${start < 17 ? `Questions must be ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, with 1–2 word clue keywords (max 15 characters). The clue keyword and question must NOT reveal their own answer. Unique keyword clues. For HARD, every question must be genuinely expert-level and require multi-concept thinking; do not use any beginner trivia.` : 'Use keyword="Confuser", question="None" for every row, with plausible wrong alternatives as answer.'}
-No repeated answers, no placeholder text. Never use Markdown or TSV.
+      const system=`You are an exceptionally precise educational quiz writer for a 16-question, 24-answer gear wheel.
+TOPIC: ${JSON.stringify(topic)}
+DIFFICULTY: ${DIFFICULTIES[difficulty] || DIFFICULTIES.medium}
+CONTENT: family-friendly, accurate, educational, appropriate for ages 6+ without watering down the intellectual difficulty.
+${requirements}
+Reply with ONLY one valid JSON object: {"rows":[{"number":NUMBER,"keyword":"CLUE","question":"QUESTION","answer":"ANSWER"}]}.
+Return EXACTLY ${count} rows, numbered ${start}–${start+count-1}. No Markdown, extra text or placeholders.
+${firstGroup || secondGroup ? `For each row: ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words per question; keyword is a natural 1–2 word clue, 15 characters max, distinct from all accepted keywords; it MUST NOT reveal the answer; question must NOT contain the answer. Keep answers concise (1–3 words). Use fair, thoughtful medium-level reasoning.` : 'All rows must have keyword="Confuser" and question="None" with one realistic, distinct, plausible wrong answer each.'}
+Avoid duplicate answers and repeat questions. All answers and keywords should be distinct from accepted rows.
 ${sourceRequirements(sourceText)}
-Only output 8 rows as JSON.`;
-      const user=`Already accepted rows (do not repeat answers; preserve their categories): ${JSON.stringify(prior)}\nProduce ONLY new rows ${start}–${start+7}. ${problem ? 'Previous issue: '+problem : ''}`;
+Output JSON only.`;
+      const user=`Previously accepted rows (do NOT repeat answers or clues): ${JSON.stringify(prior)}\nGenerate rows ${start} through ${start+count-1} now. ${problem ? 'Previous output failed: '+problem.slice(0,220) : ''}`;
+      const checkpoint=all.length;
       try {
-        const response=await groqChat([{role:'system',content:system},{role:'user',content:user}],true);
+        const response=await groqChat([{role:'system',content:system},{role:'user',content:user}],true,{
+          maxTokens:count<=2?5000:count<=4?7000:11000,
+          reasoningEffort:attempt===0 ? 'medium':'low'
+        });
         ensureSufficient(response);
         const parsed=decodeAIResponse(response);
-        if (parsed.length!==8) {problem=`Got ${parsed.length} rows, not 8.`;continue;}
-        const numbered=parsed.map((r,i)=>[String(start+i),r[1],r[2],r[3]]);
-        const checked=validateRows(numbered,8,start);
+        if (!parsed.length) {
+          problem='The AI did not return readable question rows';
+          continue;
+        }
+        // Keep the first requested rows if the model provided extras. If it
+        // provided fewer than requested, save the good rows and fill the gap.
+        const subset=parsed.slice(0,count);
+        const numbered=subset.map((r,i)=>[String(start+i),r[1],r[2],r[3]]);
+        const checked=validateRows(numbered,numbered.length,start);
         if(!checked.ok) {problem=checked.reason;continue;}
         const combined=[...all,...numbered];
-        if(new Set(combined.map(r=>compact(r[3]))).size!==combined.length) {problem='Answer repeats an earlier batch.';continue;}
+        if(new Set(combined.map(r=>compact(r[3]))).size!==combined.length) {
+          problem='An answer repeats an earlier group';continue;
+        }
+        const questions=combined.filter(row=>Number(row[0])<=16).map(row=>compact(row[2]));
+        if(new Set(questions).size!==questions.length) {
+          problem='A question repeats an earlier question';continue;
+        }
+        const newKeywords=numbered.filter(row=>Number(row[0])<=16).map(row=>compact(row[1]));
+        const priorKeywords=all.filter(row=>Number(row[0])<=16).map(row=>compact(row[1]));
+        if(new Set([...priorKeywords,...newKeywords]).size!==priorKeywords.length+newKeywords.length) {
+          problem='A clue keyword repeats an earlier group';continue;
+        }
         const safety=contentSafetyCheck(numbered);
         if(!safety.safe) {problem=safety.issues[0];continue;}
-        all=combined;success=true;
+        all.push(...numbered);
+        if(numbered.length<count) {
+          console.warn(`AI provided ${numbered.length}/${count} valid rows; generating only the missing ${count-numbered.length}`);
+          await generateSegment(start+numbered.length,count-numbered.length);
+        }
+        return;
       } catch(error) {
-        if (/attached material does not contain/i.test(error.message)) throw error;
+        // If filling a partial batch failed, roll back only this attempt's
+        // provisional rows before retrying; never leave duplicates behind.
+        all.length=checkpoint;
+        if (/attached material does not contain/i.test(error.message) || [400,401,403,429].includes(error.status)) throw error;
         problem=error.message;
+        console.warn(`Generation segment ${start}-${start+count-1} attempt ${attempt+1} failed:`,error);
       }
     }
-    if(!success) throw new Error(`The AI could not produce valid quiz rows ${start}–${start+7} after multiple attempts (${problem || previousIssues[0] || 'unreadable AI response'}). Try a more specific topic or check the AI proxy.`);
+    if (count>1) {
+      console.warn(`AI group ${start}-${start+count-1} failed; dividing into smaller groups. Reason: ${problem}`);
+      const half=Math.floor(count/2);
+      await generateSegment(start,half);
+      await generateSegment(start+half,count-half);
+      return;
+    }
+    throw new Error(`The AI could not generate question row ${start} after repeated requests (${problem}). Check the AI proxy or try again.`);
   }
-  const valid=validateRows(all);
-  if(!valid.ok) throw new Error(valid.reason);
+
+  for(let start=1;start<=24;start+=batchSize) await generateSegment(start,Math.min(batchSize,25-start));
+  const validated=validateRows(all);
+  if(!validated.ok) throw new Error(validated.reason);
   return all;
 }
+
 async function reviewClues(rows,topic,sourceText,difficulty,previousIssues=[],start=0,end=16) {
   const locked=rows.slice(start,end).map((r,i)=>({number:start+i+1,key:r[1],question:r[2],locked_answer:r[3]}));
   const expected=end-start;
@@ -907,7 +795,7 @@ async function reviewClues(rows,topic,sourceText,difficulty,previousIssues=[],st
 Topic: ${topic}. Difficulty: ${DIFFICULTIES[difficulty] || DIFFICULTIES.medium}.
 Output ONLY JSON: {"items":[{"number":${start+1},"key":"Sony Console","question":"Which video gaming console family introduced by Sony became popular for playing games on television?"}, ...]}.
 Return EXACTLY ${expected} items numbered ${start+1} through ${end}, in order.
-Rules: each clue is 1–2 natural words, max 15 characters, and must never reveal its own answer or a recognizable abbreviation/alias. Clues must be distinctive, not generic. Questions are ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, accurate, naturally written, answerable by the LOCKED answer, and must not state it. If difficulty is HARD, aggressively increase challenge by demanding expert-level subject knowledge AND synthesis of at least two concepts; rewrite any ordinary trivia item into an extremely difficult but fair question with the same LOCKED answer. Keep EASY beginner-friendly and MEDIUM thoughtful. Do not add unverified facts. Classroom-safe content only.
+Rules: each clue is 1–2 natural words, max 15 characters, and must never reveal its own answer or a recognizable abbreviation/alias. Clues must be distinctive, not generic. Questions are ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, accurate, naturally written, answerable by the LOCKED answer, and must not state it. Keep questions moderately challenging, accurate, naturally phrased and understandable. Do not add unverified facts. Classroom-safe content only.
 ${previousIssues.length ? 'Fix these issues: '+previousIssues.slice(-10).join(' | ') : ''}
 ${sourceText ? sourceRequirements(sourceText) : ''}`;
   const response=await groqChat([{role:'system',content:system},{role:'user',content:JSON.stringify(locked)}],true);
@@ -933,34 +821,49 @@ ${sourceText ? sourceRequirements(sourceText) : ''}`;
   return issues.length ? {ok:false,issues} : {ok:true,rows:result};
 }
 async function improveQuiz(rows,topic,sourceText,difficulty) {
-  const issues=[];
-  for(let attempt=0;attempt<2;attempt++) {
-    renderThinking(`AI quality review (${attempt+1}/2): checking clues and questions...`);
-    try {
-      const reviewed=await reviewClues(rows,topic,sourceText,difficulty,issues);
-      if(reviewed.ok) return reviewed.rows;
-      issues.push(...reviewed.issues);
-    } catch(error) {issues.push(error.message);}
+  let working=rows.map(row=>[...row]);
+  const issueLog=[];
+  function issuesInRange(start,end) {
+    const issues=qualityProblems(working,difficulty).concat(contentSafetyCheck(working).issues);
+    return issues.filter(issue=>{
+      const match=issue.match(/row\s+(\d+)/i);
+      return match && Number(match[1])>=start+1 && Number(match[1])<=end;
+    });
   }
-  // When an entire 16-item review is unreliable, review 8 items at a time.
-  let halfReviewed=rows;
-  for(const [begin,end] of [[0,8],[8,16]]) {
-    let success=false;
-    for(let attempt=0;attempt<3;attempt++) {
-      renderThinking(`Fine-tuning clue labels ${begin+1}–${end}...`);
+  async function reviewSegment(start,end) {
+    // Valid rows need no additional request; avoids empty optional review
+    // responses, saves tokens, and retains already-good wording.
+    if(!issuesInRange(start,end).length) return;
+    for(let attempt=0;attempt<2;attempt++) {
+      renderThinking('Generating questions...');
       try {
-        const reviewed=await reviewClues(halfReviewed,topic,sourceText,difficulty,issues,begin,end);
-        if(reviewed.ok) {halfReviewed=reviewed.rows;success=true;break;}
-        issues.push(...reviewed.issues);
-      }catch(error){issues.push(error.message);}
+        const reviewed=await reviewClues(working,topic,sourceText,difficulty,issueLog,start,end);
+        if(reviewed.ok) {working=reviewed.rows;return;}
+        issueLog.push(...reviewed.issues);
+      } catch(error) {
+        issueLog.push(error.message);
+        console.warn('Optional AI review failed:',error);
+      }
     }
-    if(!success) {
-      const originalIssues=qualityProblems(rows,difficulty).concat(contentSafetyCheck(rows).issues);
-      if(!originalIssues.length) return rows;
-      throw new Error('The AI could not produce non-revealing clue keywords. '+(issues.at(-1)||'Try regenerating.'));
+    // Do not lose a valid quiz just because the optional AI review returned
+    // empty or malformed output. Its correctness checks are still enforced.
+    if(!issuesInRange(start,end).length) {
+      console.warn(`Keeping validated original questions ${start+1}-${end}; optional review unavailable`);
+      return;
     }
+    if(end-start>1) {
+      const mid=start+Math.floor((end-start)/2);
+      await reviewSegment(start,mid);
+      await reviewSegment(mid,end);
+      return;
+    }
+    throw new Error(`Question ${start+1} failed quality checks after review: ${issuesInRange(start,end)[0] || issueLog.at(-1)}`);
   }
-  return halfReviewed;
+  const batchSize=4;
+  for(let start=0;start<16;start+=batchSize) {
+    await reviewSegment(start,Math.min(16,start+batchSize));
+  }
+  return working;
 }
 
 /* =================== GENERATION PIPELINE =================== */
@@ -990,26 +893,22 @@ async function generate(topic,items,difficulty) {
   }
   flags.push(flags.shift());obj.outerFlags=flags;
   clearThinking();renderTable(finalRows);renderJSON(obj);
-  showToast('Questions ready!');
+  showToast('Quiz generated successfully!');
 }
 $('#btn-send').onclick=async () => {
   if(generating)return;
   const raw=$('#input').value.trim();
   if(!raw && !attachments.length)return;
-  const items=attachments.slice(),topic=splitTopic(raw),difficulty=getDifficulty();
+  const items=attachments.slice(),topic=splitTopic(raw);
   renderUser((raw || 'Generate from attached material')+(items.length?` [${items.length} attachment(s)]`:''));
   $('#input').value='';attachments=[];renderAttachmentPreviews();
   generating=true;
   for(const node of ['#btn-send','#btn-attach','#btn-camera']) $(node).disabled=true;
-  $('#difficulty-range').disabled=true;
-  document.querySelectorAll('[data-difficulty]').forEach(node=>node.disabled=true);
-  try {await generate(topic,items,difficulty);}
+  try {await generate(topic,items,QUIZ_DIFFICULTY);}
   catch(error){console.error('Generation:',error);clearThinking();renderError(error.message);}
   finally {
     generating=false;
     for(const node of ['#btn-send','#btn-attach','#btn-camera']) $(node).disabled=false;
-    $('#difficulty-range').disabled=false;
-    document.querySelectorAll('[data-difficulty]').forEach(node=>node.disabled=false);
   }
 };
 $('#input').onkeydown=event=>{
