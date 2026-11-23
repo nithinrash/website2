@@ -41,6 +41,144 @@
     .attachment .remove { position:absolute; top:-6px; right:-6px; border-radius:50%; width:22px; height:22px; padding:0; line-height:1; }
     .attachment-name { display:block; max-width:130px; white-space:nowrap; text-overflow:ellipsis; overflow:hidden; }
     .app-footer { padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px)) !important; }
+
+    /* Small emoji-mood difficulty slider, directly beneath Send. */
+    .send-stack {
+      flex:0 0 118px;
+      width:118px;
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+      align-items:stretch;
+      gap:3px;
+    }
+    .send-stack #btn-send {
+      justify-content:center;
+      min-height:38px;
+      padding-inline:9px !important;
+    }
+    .difficulty-widget {
+      --level-accent:#c860ef;
+      width:100%;
+      box-sizing:border-box;
+      padding:0 2px;
+      background:transparent;
+      border:0;
+      color:var(--bs-body-color);
+    }
+    .difficulty-widget[data-level="easy"] { --level-accent:#ffb334; }
+    .difficulty-widget[data-level="medium"] { --level-accent:#eb3d87; }
+    .difficulty-widget[data-level="hard"] { --level-accent:#7351e9; }
+    .difficulty-slider-area { width:100%; }
+    .mood-slider {
+      position:relative;
+      width:100%;
+      height:29px;
+      touch-action:pan-y;
+    }
+    /* Native input remains keyboard accessible, with the colorful custom track below it. */
+    #difficulty-range {
+      position:absolute;
+      z-index:3;
+      inset:0;
+      display:block;
+      width:100%;
+      height:29px;
+      padding:0;
+      margin:0;
+      opacity:0;
+      cursor:grab;
+      -webkit-appearance:none;
+      appearance:none;
+      touch-action:pan-y;
+    }
+    #difficulty-range:active { cursor:grabbing; }
+    #difficulty-range::-webkit-slider-thumb {
+      -webkit-appearance:none;
+      appearance:none;
+      width:29px;
+      height:29px;
+      background:transparent;
+      border:0;
+    }
+    #difficulty-range::-moz-range-thumb {
+      width:29px;
+      height:29px;
+      background:transparent;
+      border:0;
+    }
+    .mood-rail {
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      border-radius:25px;
+    }
+    .mood-color-track {
+      position:absolute;
+      left:13px;
+      right:13px;
+      top:11px;
+      height:9px;
+      border-radius:99px;
+      background:linear-gradient(90deg,#ffd46e 0%,#ff9441 24%,#ff3267 49%,#d000ad 72%,#5547fa 100%);
+      box-shadow:inset 0 1px 2px #00000017,0 1px 3px #00000012;
+    }
+    /* Thumb positions match the native range's three snap points. */
+    .difficulty-face {
+      position:absolute;
+      top:0;
+      left:50%;
+      width:29px;
+      height:29px;
+      transform:translateX(-50%);
+      border-radius:50%;
+      filter:drop-shadow(0 2px 2px #00000026);
+      transition:left .2s cubic-bezier(.2,.75,.25,1),filter .2s;
+    }
+    .difficulty-face svg {display:block;width:100%;height:100%;}
+    .difficulty-widget[data-level="easy"] .difficulty-face {left:14.5px;}
+    .difficulty-widget[data-level="medium"] .difficulty-face {left:50%;}
+    .difficulty-widget[data-level="hard"] .difficulty-face {left:calc(100% - 14.5px);}
+    .face-expression {opacity:0;transition:opacity .14s ease-in-out;}
+    .difficulty-widget[data-level="easy"] .face-expression.easy,
+    .difficulty-widget[data-level="medium"] .face-expression.medium,
+    .difficulty-widget[data-level="hard"] .face-expression.hard {opacity:1;}
+    #difficulty-range:focus-visible + .mood-rail {outline:2px solid var(--bs-primary);outline-offset:3px;}
+    #difficulty-range:disabled {cursor:not-allowed;}
+    #difficulty-range:disabled + .mood-rail {opacity:.6;}
+    .difficulty-stops {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      align-items:center;
+      gap:0;
+      margin-top:-1px;
+    }
+    .difficulty-stops button {
+      min-height:14px;
+      padding:0;
+      border:0;
+      background:transparent;
+      border-radius:3px;
+      color:var(--bs-secondary-color);
+      font-size:9px;
+      font-weight:600;
+      line-height:1.3;
+      cursor:pointer;
+    }
+    .difficulty-stops button:first-child {text-align:left;}
+    .difficulty-stops button:last-child {text-align:right;}
+    .difficulty-stops button.active {color:var(--bs-body-color);font-weight:800;}
+    .difficulty-stops button:focus-visible {outline:2px solid var(--bs-primary);outline-offset:1px;}
+    .difficulty-stops button:disabled {opacity:.65;cursor:not-allowed;}
+    [data-bs-theme="dark"] .mood-color-track {
+      box-shadow:inset 0 1px 2px #0005,0 0 6px #d000ad20;
+    }
+    [data-bs-theme="dark"] .difficulty-face {filter:drop-shadow(0 2px 4px #0009);}
+    @media(max-width:370px) {
+      .send-stack {flex-basis:108px;width:108px;}
+      .difficulty-stops button {font-size:8.5px;}
+    }
+    @media(prefers-reduced-motion:reduce){.difficulty-widget *, .difficulty-widget {transition:none!important}}
     .toast-container { z-index:1100; }
   </style>
 </head>
@@ -64,27 +202,65 @@
   <footer class="app-footer p-3 border-top bg-body">
     <div id="image-preview-container" class="mb-2 d-none d-flex gap-2 align-items-center flex-wrap"></div>
     <div class="card shadow-sm border-secondary-subtle">
-      <div class="card-body p-2 d-flex gap-2">
+      <div class="card-body p-2 d-flex gap-2 align-items-center">
         <input type="file" id="file-input" accept="image/*,application/pdf" class="d-none" multiple>
-        <button id="btn-attach" class="btn btn-outline-secondary" title="Attach Image or PDF"><i class="bi bi-paperclip"></i></button>
-        <button id="btn-camera" class="btn btn-outline-secondary" title="Open Camera"><i class="bi bi-camera-fill"></i></button>
-        <textarea id="input" rows="1" class="form-control border-0 shadow-none" style="resize:none;max-height:110px" placeholder="Type a topic or attach study material"></textarea>
-        <button id="btn-send" class="btn btn-primary px-3 d-flex align-items-center gap-2"><i class="bi bi-send-fill"></i><span class="d-none d-sm-inline">Send</span></button>
-      </div>
-      <div class="card-footer border-0 bg-transparent pt-0 pb-2 px-2">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span class="text-muted small">Enter to send · Shift+Enter for new line</span>
-          <fieldset id="difficulty-select" class="d-flex align-items-center gap-2 m-0 p-0 border-0">
-            <legend class="float-none w-auto m-0 small fw-semibold">Difficulty</legend>
-            <div class="btn-group btn-group-sm" role="group" aria-label="Quiz difficulty">
-              <input type="radio" class="btn-check" name="difficulty" id="difficulty-easy" value="easy" autocomplete="off">
-              <label class="btn btn-outline-success" for="difficulty-easy">Easy</label>
-              <input type="radio" class="btn-check" name="difficulty" id="difficulty-medium" value="medium" autocomplete="off" checked>
-              <label class="btn btn-outline-primary" for="difficulty-medium">Medium</label>
-              <input type="radio" class="btn-check" name="difficulty" id="difficulty-hard" value="hard" autocomplete="off">
-              <label class="btn btn-outline-danger" for="difficulty-hard">Hard</label>
+        <button id="btn-attach" class="btn btn-outline-secondary flex-shrink-0" title="Attach Image or PDF"><i class="bi bi-paperclip"></i></button>
+        <button id="btn-camera" class="btn btn-outline-secondary flex-shrink-0" title="Open Camera"><i class="bi bi-camera-fill"></i></button>
+        <textarea id="input" rows="1" class="form-control border-0 shadow-none flex-grow-1" style="resize:none;max-height:110px;min-width:0" placeholder="Type a topic or attach study material"></textarea>
+        <div class="send-stack">
+          <button id="btn-send" class="btn btn-primary d-flex align-items-center gap-2"><i class="bi bi-send-fill"></i><span class="d-none d-sm-inline">Send</span></button>
+          <div class="difficulty-widget" id="difficulty-select" data-level="medium" title="Slide to choose quiz difficulty">
+            <span id="difficulty-current" class="visually-hidden" aria-live="polite">Medium</span>
+            <div class="difficulty-slider-area">
+              <div class="mood-slider">
+                <input id="difficulty-range" type="range" min="0" max="2" step="1" value="1"
+                       aria-label="Quiz difficulty" aria-valuetext="Medium">
+                <div class="mood-rail" aria-hidden="true">
+                  <div class="mood-color-track"></div>
+                  <div class="difficulty-face">
+                    <!-- One consistent yellow smiley with three mood expressions. -->
+                    <svg viewBox="0 0 40 40" focusable="false" aria-hidden="true">
+                      <circle cx="20" cy="20" r="19" fill="#f1ae00"/>
+                      <circle cx="21" cy="18" r="18" fill="#ffcb0d"/>
+                      <path d="M9 8 Q19 0 30 9" stroke="#ffe995" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".9"/>
+                      <g class="face-expression easy">
+                        <ellipse cx="11.6" cy="23.5" rx="3.4" ry="1.9" fill="#ff7096"/>
+                        <ellipse cx="29.4" cy="23.5" rx="3.4" ry="1.9" fill="#ff7096"/>
+                        <circle cx="14" cy="17" r="2.2" fill="#35231b"/><circle cx="27" cy="17" r="2.2" fill="#35231b"/>
+                        <circle cx="14.5" cy="16.3" r=".65" fill="white"/><circle cx="27.5" cy="16.3" r=".65" fill="white"/>
+                        <path d="M13 24 Q20.5 35 28 24 Z" fill="#422015"/>
+                      </g>
+                      <g class="face-expression medium">
+                        <ellipse cx="11.1" cy="24.5" rx="2.4" ry="1.3" fill="#ff8f9c"/>
+                        <ellipse cx="29.8" cy="24.5" rx="2.4" ry="1.3" fill="#ff8f9c"/>
+                        <path d="M11.5 13.6 L17 12.8 M24 12.8 L29 13.5" stroke="#5d351a" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="14" cy="18.3" r="2" fill="#35231b"/><circle cx="27" cy="18.3" r="2" fill="#35231b"/>
+                        <circle cx="14.5" cy="17.7" r=".6" fill="white"/><circle cx="27.5" cy="17.7" r=".6" fill="white"/>
+                        <path d="M16 27 Q21 24.5 25 27" stroke="#422015" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                        <path d="M29 25 Q27 22 30 20 Q32 20 32 22" stroke="#422015" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+                      </g>
+                      <g class="face-expression hard">
+                        <ellipse cx="11.5" cy="24" rx="2.8" ry="1.45" fill="#ff7596"/>
+                        <ellipse cx="29.4" cy="24" rx="2.8" ry="1.45" fill="#ff7596"/>
+                        <path d="M10 13 L16.8 15 M24 15 L30.3 13" stroke="#66401d" stroke-width="2.2" stroke-linecap="round"/>
+                        <ellipse cx="14" cy="19" rx="1.95" ry="2.5" fill="#35231b"/>
+                        <ellipse cx="27" cy="19" rx="1.95" ry="2.5" fill="#35231b"/>
+                        <circle cx="14.4" cy="18.3" r=".6" fill="white"/><circle cx="27.4" cy="18.3" r=".6" fill="white"/>
+                        <rect x="15" y="25.1" width="11.2" height="4.7" rx="1.8" fill="#fff9e6" stroke="#6e3b18" stroke-width="1"/>
+                        <path d="M18.7 25.4 L18.7 29.4 M22.3 25.4 L22.3 29.4" stroke="#aa8b67" stroke-width=".7"/>
+                        <path d="M32.1 17 Q35 21 32.6 22.6 Q30 22.6 30.4 20.5 Z" fill="#8dddf9" stroke="#6bc8ec" stroke-width=".6"/>
+                      </g>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="difficulty-stops">
+                <button type="button" data-difficulty="easy" aria-label="Set easy difficulty">Easy</button>
+                <button type="button" data-difficulty="medium" class="active" aria-label="Set medium difficulty">Medium</button>
+                <button type="button" data-difficulty="hard" aria-label="Set hard difficulty">Hard</button>
+              </div>
             </div>
-          </fieldset>
+          </div>
         </div>
       </div>
     </div>
@@ -174,15 +350,15 @@ function renderUser(message) {
   chat.appendChild(node); scrollChat();
 }
 function renderThinking(message) {
-  clearThinking();
+  if (chat.querySelector('[data-thinking="1"]')) return;
   const node = document.createElement('div');
   node.dataset.thinking = '1';
   node.className = 'd-flex align-items-center justify-content-center py-4 text-muted fade-in-up';
   node.innerHTML = '<div class="spinner-border spinner-border-sm me-2" role="status"></div><span class="small fst-italic" data-thinking-text></span>';
-  node.querySelector('[data-thinking-text]').textContent = message;
+  node.querySelector('[data-thinking-text]').textContent = 'Generating questions...';
   chat.appendChild(node); scrollChat();
 }
-function updateThinkingText(message) { const el = $('[data-thinking-text]'); if (el) el.textContent = message; }
+function updateThinkingText(message) { const el = $('[data-thinking-text]'); if (el) el.textContent = 'Generating questions...'; }
 function clearThinking() { chat.querySelectorAll('[data-thinking="1"]').forEach(node => node.remove()); }
 function renderError(message) {
   const node = document.createElement('div'); node.className = 'alert alert-danger small fade-in-up';
@@ -533,7 +709,7 @@ function validateRows(rows,expected=24,firstNumber=1) {
   return {ok:true,rows};
 }
 function parseTSV(raw) {return validateRows(decodeAIResponse(raw));}
-function qualityProblems(rows) {
+function qualityProblems(rows,difficulty='medium') {
   const issues=[],seen=new Set();
   for (let i=0;i<16;i++) {
     const [rowNumber,key,question,answer]=rows[i];
@@ -544,7 +720,8 @@ function qualityProblems(rows) {
     if (keywordRevealsAnswer(kw,answer)) issues.push(`Row ${rowNumber}: keyword "${kw}" reveals answer "${answer}".`);
     if (questionRevealsAnswer(question,answer)) issues.push(`Row ${rowNumber}: question contains the answer "${answer}".`);
     const wordCount=question.trim().split(/\s+/).length;
-    if (wordCount<10 || wordCount>25) issues.push(`Row ${rowNumber}: question has ${wordCount} words, expected 10–25.`);
+    const [minimum,maximum]=DIFFICULTY_LIMITS[difficulty] || DIFFICULTY_LIMITS.medium;
+    if (wordCount<minimum || wordCount>maximum) issues.push(`Row ${rowNumber}: question has ${wordCount} words, expected ${minimum}–${maximum} for ${difficulty}.`);
   }
   return issues;
 }
@@ -561,25 +738,43 @@ function parseJSON(raw) {
 }
 
 /* =================== DIFFICULTY & PROMPTS =================== */
-const DIFFICULTIES={
-  easy:'EASY: ages roughly 6–9. Familiar school-level facts and recognizable everyday examples. One-step recall or reasoning, straightforward sentences, clearly recognizable correct answers, plausible but accessible distractors.',
-  medium:'MEDIUM: ages roughly 10–13. Mix of familiar and less obvious concepts. Use interpretation, comparison and one- or two-step reasoning. Avoid giving away the answer through question wording.',
-  hard:'HARD: challenging for informed teenagers. Require conceptual understanding, multi-step thinking or subtle distinctions, not merely obscure trivia or trick wording. Still age-appropriate, accurate and unambiguous.'
+const DIFFICULTIES = {
+  easy: `EASY — beginner / elementary. Every question should be solvable through one basic fact or one simple inference. Use familiar everyday examples, accessible vocabulary and direct but non-revealing clues. Avoid obscure dates, advanced concepts or multi-part reasoning.`,
+  medium: `MEDIUM — intermediate / good general-knowledge adult. Questions require thoughtful comparison, applications of learned concepts, or two connected facts rather than simplistic recall. Use a mix of moderately challenging and less familiar knowledge, but avoid specialized academic jargon where possible.`,
+  hard: `HARD — EXTREME / EXPERT / OLYMPIAD LEVEL. Deliberately produce VERY, VERY difficult questions that challenge highly educated adults, advanced university students and subject specialists. Never make Hard just slightly harder than Medium. Prefer precise, specialized, difficult but well-established material. Each question should require at least TWO independent pieces of subject knowledge, careful synthesis, non-obvious comparison, advanced conceptual reasoning, or advanced real-world application. Use nuanced scientific/technical/historical distinctions appropriate to the topic and narrow clues that still allow exactly one defensible answer. No elementary facts, first-page encyclopedic definitions, obvious famous names, easy single-hop recall, or childish trivia. No impossible riddles, artificial obscurity, misleading phrasing, subjective ambiguity or invented facts. Make the hardest defensible questions possible within the chosen topic and provided evidence.`
 };
+const DIFFICULTY_LEVELS=['easy','medium','hard'];
+const DIFFICULTY_LIMITS={easy:[10,25],medium:[12,30],hard:[18,48]};
 function getDifficulty() {
-  return document.querySelector('input[name="difficulty"]:checked')?.value || 'medium';
+  return DIFFICULTY_LEVELS[Number($('#difficulty-range').value)] || 'medium';
 }
 function setDifficulty(value) {
-  const radio=$('#difficulty-'+value);
-  if(radio) radio.checked=true;
+  const level=DIFFICULTY_LEVELS.includes(value)?value:'medium';
+  const slider=$('#difficulty-range');
+  slider.value=String(DIFFICULTY_LEVELS.indexOf(level));
+  slider.setAttribute('aria-valuetext',level[0].toUpperCase()+level.slice(1));
+  $('#difficulty-select').dataset.level=level;
+  $('#difficulty-current').textContent=level[0].toUpperCase()+level.slice(1);
+  document.querySelectorAll('[data-difficulty]').forEach(button=>{
+    const active=button.dataset.difficulty===level;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
 }
 try {
   const saved=localStorage.getItem('HURUP_DIFFICULTY');
-  if(saved && Object.hasOwn(DIFFICULTIES,saved)) setDifficulty(saved);
-} catch {}
-$('#difficulty-select').onchange=()=>{
+  if(saved && Object.prototype.hasOwnProperty.call(DIFFICULTIES,saved)) setDifficulty(saved);
+  else setDifficulty('medium');
+} catch {setDifficulty('medium');}
+function updateDifficulty(value) {
+  if(generating) return;
+  setDifficulty(value);
   try {localStorage.setItem('HURUP_DIFFICULTY',getDifficulty());} catch {}
-};
+}
+$('#difficulty-range').addEventListener('input',()=>updateDifficulty(getDifficulty()));
+document.querySelectorAll('[data-difficulty]').forEach(button=>{
+  button.addEventListener('click',()=>updateDifficulty(button.dataset.difficulty));
+});
 function splitTopic(text) {
   return text.replace(/\b(make|generate|create|rows|table|questions|quiz)\b/gi,'').trim() || 'General Knowledge';
 }
@@ -604,7 +799,9 @@ RULES FOR ROWS 1–16:
 - Keyword is a SHORT CLUE displayed on the inner wheel, not the answer! 1–2 natural words, MAX 15 characters including spaces. All 16 keywords must be distinct.
 - Keyword must NOT equal or contain its answer, any answer word, obvious abbreviation or alias.
 - Question must NOT state its own answer or a direct alternate spelling of its answer.
-- Questions: 10–25 words, naturally phrased, accurate, with exactly one defensible answer. No ambiguous wording.
+- Questions: ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, naturally phrased, accurate, with exactly one defensible answer. No ambiguous wording.
+- The difficulty is mandatory for all sixteen questions, not just a few. For HARD, require genuinely advanced reasoning and specialized subject knowledge throughout, with no easy warm-up questions. For MEDIUM, require some interpretation rather than common elementary recall. EASY must remain accessible.
+- Keep the correct answer itself short (typically 1–3 words) even when the reasoning required is deep.
 - Answers: preferably 1–3 words, concise and distinctive.
 - Avoid vague clue keywords ("Question", "Item 3", "Guess").
 - Example BAD: keyword="PlayStation", answer="PlayStation".
@@ -615,7 +812,7 @@ ALL 24 ANSWERS: unique after ignoring spaces/case/punctuation; no placeholders.
 
 ${sourceRequirements(sourceText)}
 
-Before submitting, silently verify 24 rows, 16 distinct clues, no answer giveaways, all unique answers, accurate facts, and ${difficulty.toUpperCase()} difficulty. Output JSON only.`;
+Before submitting, silently audit every question for the selected difficulty. If HARD, replace any item a typical school student could answer through simple recall with a rigorous, specialized, multi-concept question. Questions must remain accurately answerable and have concise answers. Verify 24 rows, unique clues/answers and no answer giveaways. Output JSON only.`;
 }
 async function repairRowsPrompt(topic,sourceText,difficulty,previous,issues,attempt) {
   const prompt=buildQuizPrompt(topic,sourceText,difficulty);
@@ -674,7 +871,7 @@ TOPIC: ${topic}. DIFFICULTY: ${DIFFICULTIES[difficulty] || DIFFICULTIES.medium}.
 CONTENT RULES: Classroom-friendly, factual, unambiguous, appropriate for ages 6+. ${requirements}
 Return ONLY a valid JSON object with EXACTLY EIGHT objects in its rows array, numbered ${start} through ${start+7}.
 Each object uses properties: number (integer), keyword (string), question (string), answer (string).
-${start < 17 ? 'Questions must be 10–25 words, with 1–2 word clue keywords (max 15 characters). The clue keyword and question must NOT reveal their own answer. Unique keyword clues; no trivial vague labels.' : 'Use keyword="Confuser", question="None" for every row, with plausible wrong alternatives as answer.'}
+${start < 17 ? `Questions must be ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, with 1–2 word clue keywords (max 15 characters). The clue keyword and question must NOT reveal their own answer. Unique keyword clues. For HARD, every question must be genuinely expert-level and require multi-concept thinking; do not use any beginner trivia.` : 'Use keyword="Confuser", question="None" for every row, with plausible wrong alternatives as answer.'}
 No repeated answers, no placeholder text. Never use Markdown or TSV.
 ${sourceRequirements(sourceText)}
 Only output 8 rows as JSON.`;
@@ -710,7 +907,7 @@ async function reviewClues(rows,topic,sourceText,difficulty,previousIssues=[],st
 Topic: ${topic}. Difficulty: ${DIFFICULTIES[difficulty] || DIFFICULTIES.medium}.
 Output ONLY JSON: {"items":[{"number":${start+1},"key":"Sony Console","question":"Which video gaming console family introduced by Sony became popular for playing games on television?"}, ...]}.
 Return EXACTLY ${expected} items numbered ${start+1} through ${end}, in order.
-Rules: each clue is 1–2 natural words, max 15 characters, and must never reveal its own answer or a recognizable abbreviation/alias. Clues must be distinctive, not generic. Questions are 10–25 words, accurate, naturally written, answerable by the LOCKED answer, and must not state it. Keep the selected ${difficulty} difficulty level (do not unintentionally simplify hard questions). Do not add unverified facts. Classroom-safe content only.
+Rules: each clue is 1–2 natural words, max 15 characters, and must never reveal its own answer or a recognizable abbreviation/alias. Clues must be distinctive, not generic. Questions are ${DIFFICULTY_LIMITS[difficulty][0]}–${DIFFICULTY_LIMITS[difficulty][1]} words, accurate, naturally written, answerable by the LOCKED answer, and must not state it. If difficulty is HARD, aggressively increase challenge by demanding expert-level subject knowledge AND synthesis of at least two concepts; rewrite any ordinary trivia item into an extremely difficult but fair question with the same LOCKED answer. Keep EASY beginner-friendly and MEDIUM thoughtful. Do not add unverified facts. Classroom-safe content only.
 ${previousIssues.length ? 'Fix these issues: '+previousIssues.slice(-10).join(' | ') : ''}
 ${sourceText ? sourceRequirements(sourceText) : ''}`;
   const response=await groqChat([{role:'system',content:system},{role:'user',content:JSON.stringify(locked)}],true);
@@ -725,7 +922,7 @@ ${sourceText ? sourceRequirements(sourceText) : ''}`;
     result[start+i][1]=item.key.trim();result[start+i][2]=item.question.trim();
     // Correct answers are locked; only clue and wording can be edited.
   }
-  const issues=qualityProblems(result).filter(issue=>{
+  const issues=qualityProblems(result,difficulty).filter(issue=>{
     const found=issue.match(/^Row (\d+):/);
     return found && Number(found[1])>=start+1 && Number(found[1])<=end;
   });
@@ -758,8 +955,8 @@ async function improveQuiz(rows,topic,sourceText,difficulty) {
       }catch(error){issues.push(error.message);}
     }
     if(!success) {
-      const originalIssues=qualityProblems(rows).concat(contentSafetyCheck(rows).issues);
-      if(!originalIssues.length) {showToast('Using the validated original questions.');return rows;}
+      const originalIssues=qualityProblems(rows,difficulty).concat(contentSafetyCheck(rows).issues);
+      if(!originalIssues.length) return rows;
       throw new Error('The AI could not produce non-revealing clue keywords. '+(issues.at(-1)||'Try regenerating.'));
     }
   }
@@ -773,7 +970,7 @@ async function generate(topic,items,difficulty) {
   const finalRows=await improveQuiz(draft,topic,sourceText,difficulty);
   const checked=validateRows(finalRows);
   if(!checked.ok) throw new Error(checked.reason);
-  const problems=qualityProblems(finalRows).concat(contentSafetyCheck(finalRows).issues);
+  const problems=qualityProblems(finalRows,difficulty).concat(contentSafetyCheck(finalRows).issues);
   if(problems.length) throw new Error('The final quiz failed validation: '+problems[0]);
   const innerOrder=finalRows.slice(0,16).map(row=>row[1]);
   const obj={
@@ -793,24 +990,26 @@ async function generate(topic,items,difficulty) {
   }
   flags.push(flags.shift());obj.outerFlags=flags;
   clearThinking();renderTable(finalRows);renderJSON(obj);
-  showToast(`Ready: ${difficulty} quiz with 16 verified clues and 24 unique answers.`);
+  showToast('Questions ready!');
 }
 $('#btn-send').onclick=async () => {
   if(generating)return;
   const raw=$('#input').value.trim();
   if(!raw && !attachments.length)return;
   const items=attachments.slice(),topic=splitTopic(raw),difficulty=getDifficulty();
-  renderUser((raw || 'Generate from attached material')+` [${difficulty[0].toUpperCase()+difficulty.slice(1)}]`+(items.length?` [${items.length} attachment(s)]`:''));
+  renderUser((raw || 'Generate from attached material')+(items.length?` [${items.length} attachment(s)]`:''));
   $('#input').value='';attachments=[];renderAttachmentPreviews();
   generating=true;
   for(const node of ['#btn-send','#btn-attach','#btn-camera']) $(node).disabled=true;
-  document.querySelectorAll('input[name="difficulty"]').forEach(node=>node.disabled=true);
+  $('#difficulty-range').disabled=true;
+  document.querySelectorAll('[data-difficulty]').forEach(node=>node.disabled=true);
   try {await generate(topic,items,difficulty);}
   catch(error){console.error('Generation:',error);clearThinking();renderError(error.message);}
   finally {
     generating=false;
     for(const node of ['#btn-send','#btn-attach','#btn-camera']) $(node).disabled=false;
-    document.querySelectorAll('input[name="difficulty"]').forEach(node=>node.disabled=false);
+    $('#difficulty-range').disabled=false;
+    document.querySelectorAll('[data-difficulty]').forEach(node=>node.disabled=false);
   }
 };
 $('#input').onkeydown=event=>{
