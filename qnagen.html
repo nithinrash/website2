@@ -550,6 +550,7 @@
         let cameraFacingMode = 'environment';
         let flashOn = false;
         let generating = false;
+        let activeAbortController = null;
         function renderAttachmentPreviews() {
             const parent = $('#image-preview-container'); parent.replaceChildren();
             parent.classList.toggle('d-none', attachments.length === 0);
