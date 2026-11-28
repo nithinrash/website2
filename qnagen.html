@@ -719,6 +719,7 @@
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+                const timeout = setTimeout(() => controller.abort(), 180000); // 3-minute timeout (quiz generation is a heavy request)
 
                 try {
                     const response = await fetch(endpoint, {
@@ -768,6 +769,7 @@
                     // AbortController timeout
                     if (err.name === 'AbortError') {
                         lastError = new Error('Request timed out after 60 seconds. The AI service may be slow — please retry.');
+                        lastError = new Error('Request timed out after 3 minutes. The AI service may be very slow — please retry.');
                     }
 
                     const msg = lastError.message.toLowerCase();
