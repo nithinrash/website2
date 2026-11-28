@@ -26,7 +26,7 @@ const KRUTRIM_ENDPOINT = 'https://cloud.olakrutrim.com/v1/chat/completions';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-User-Api-Key',
+  'Access-Control-Allow-Headers': 'Content-Type, X-User-Api-Key, Authorization',
   'Access-Control-Max-Age': '86400',
 };
 
