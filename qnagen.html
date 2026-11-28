@@ -389,8 +389,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-warning small py-2 mb-3">
-                        <i class="bi bi-info-circle-fill me-1"></i> If the shared Cloudflare worker is overloaded (HTTP 503 verifying key), you can enter your own Krutrim API key below to generate questions directly via Krutrim Cloud.
+                    <div class="alert alert-info small py-2 mb-3">
+                        <i class="bi bi-info-circle-fill me-1"></i> All requests go through a Cloudflare proxy for reliability. Optionally enter your own Krutrim API key below for a dedicated connection (avoids shared rate limits).
                     </div>
                     <div class="mb-3">
                         <label for="cfg-api-key" class="form-label small fw-bold">Direct Krutrim API Key (Optional)</label>
@@ -457,12 +457,26 @@
             const node = document.createElement('div');
             node.className = 'alert alert-danger small fade-in-up';
 
-            const is503 = message.includes('503') || message.toLowerCase().includes('overloaded') || message.toLowerCase().includes('verifying your key') || message.toLowerCase().includes('proxy');
-            if (is503) {
+            const isRetryable = message.includes('503') || message.includes('429') ||
+                message.toLowerCase().includes('overloaded') || message.toLowerCase().includes('timed out') ||
+                message.toLowerCase().includes('failed to fetch') || message.toLowerCase().includes('busy') ||
+                message.toLowerCase().includes('connection issue') || message.toLowerCase().includes('retry');
+            const isAuthError = message.includes('401') || message.includes('403') || message.toLowerCase().includes('invalid api key');
+            if (isAuthError) {
                 node.innerHTML = `
-                    <div class="fw-bold mb-1"><i class="bi bi-shield-lock-fill me-1"></i> AI Service Overloaded (HTTP 503)</div>
+                    <div class="fw-bold mb-1"><i class="bi bi-key-fill me-1"></i> Invalid API Key</div>
                     <div class="mb-2 text-break">${escapeHTML(message)}</div>
-                    <div class="small mb-3 text-secondary">The Cloudflare AI proxy is currently overloaded verifying its Krutrim key. You can wait a moment and retry, or use your own Krutrim API key to generate questions right away.</div>
+                    <div class="small mb-3 text-secondary">Your Krutrim API key was rejected. Open Settings to enter a valid key, or clear it to use the shared proxy instead.</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-dark" onclick="openSettingsModal()"><i class="bi bi-key-fill me-1"></i> Fix API Key</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="retryLastGenerate()"><i class="bi bi-arrow-clockwise me-1"></i> Retry Generation</button>
+                    </div>
+                `;
+            } else if (isRetryable) {
+                node.innerHTML = `
+                    <div class="fw-bold mb-1"><i class="bi bi-cloud-slash-fill me-1"></i> AI Service Unavailable</div>
+                    <div class="mb-2 text-break">${escapeHTML(message)}</div>
+                    <div class="small mb-3 text-secondary">The AI service is temporarily unavailable or overloaded. Wait a moment and retry. If this keeps happening, try entering your own Krutrim API key in Settings.</div>
                     <div class="d-flex flex-wrap gap-2">
                         <button type="button" class="btn btn-sm btn-dark" onclick="openSettingsModal()"><i class="bi bi-key-fill me-1"></i> Enter Krutrim API Key</button>
                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="retryLastGenerate()"><i class="bi bi-arrow-clockwise me-1"></i> Retry Generation</button>
@@ -677,26 +691,40 @@
         $('#cam-flash').onclick = toggleFlash;
         $('#cam-shutter').onclick = capturePhoto;
 
-        /* =================== KRUTRIM AI ENDPOINT =================== */
+        /* =================== KRUTRIM AI ENDPOINT (via proxy) =================== */
+        /*
+         * PRODUCTION ARCHITECTURE:
+         * ALL requests go through the Cloudflare Worker proxy.
+         * The proxy adds CORS headers and forwards to Krutrim Cloud.
+         * If the user has a personal API key, it is sent as X-User-Api-Key
+         * header — the proxy uses it instead of its default key.
+         * This avoids all CORS / mixed-content / preflight issues.
+         */
         async function krutrimChat(messages, jsonMode = false) {
             const userKey = (localStorage.getItem('HURUP_KRUTRIM_API_KEY') || '').trim();
             const customProxy = (localStorage.getItem('HURUP_AI_PROXY') || '').trim();
             const chosenModel = (localStorage.getItem('HURUP_AI_MODEL') || MODEL).trim();
 
-            const endpoint = userKey ? 'https://cloud.olakrutrim.com/v1/chat/completions' : (customProxy || CLOUDFLARE_AI_URL);
+            // Always go through the proxy — never call Krutrim directly from the browser
+            const endpoint = customProxy || CLOUDFLARE_AI_URL;
             const headers = { 'Content-Type': 'application/json' };
+            // Send user's personal key via a custom header (proxy will use it)
             if (userKey) {
-                headers['Authorization'] = `Bearer ${userKey}`;
+                headers['X-User-Api-Key'] = userKey;
             }
 
-            const maxRetries = 3;
+            const maxRetries = 4;
             let lastError = null;
 
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
                 try {
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers,
+                        signal: controller.signal,
                         body: JSON.stringify({
                             model: chosenModel,
                             messages,
@@ -705,20 +733,24 @@
                         })
                     });
 
+                    clearTimeout(timeout);
+
                     if (!response.ok) {
                         const body = await response.json().catch(() => ({}));
                         const errMsg = typeof body.error === 'string' ? body.error : body.error?.message || `AI HTTP ${response.status}`;
 
-                        const isTransient = [502, 503, 504, 429].includes(response.status) ||
-                            errMsg.includes('503') ||
-                            errMsg.toLowerCase().includes('overloaded') ||
-                            errMsg.toLowerCase().includes('retry in a moment');
+                        const isTransient = [429, 500, 502, 503, 504].includes(response.status) ||
+                            /503|overloaded|retry|rate.limit|timeout|busy/i.test(errMsg);
 
                         if (isTransient && attempt < maxRetries) {
-                            const delayMs = attempt * 2000;
-                            updateThinkingText(`Krutrim service is busy verifying key (HTTP 503). Retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries})...`);
+                            const delayMs = Math.min(attempt * 2000, 8000);
+                            updateThinkingText(`AI service busy (${response.status}). Retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries})…`);
                             await new Promise(res => setTimeout(res, delayMs));
                             continue;
+                        }
+
+                        if (response.status === 401 || response.status === 403) {
+                            throw new Error(`Invalid API key (HTTP ${response.status}). Open Settings ⚙️ and check your Krutrim API key.`);
                         }
 
                         throw new Error(errMsg);
@@ -726,21 +758,32 @@
 
                     const data = await response.json();
                     const result = data.choices?.[0]?.message?.content;
-                    if (typeof result !== 'string' || !result.trim()) throw new Error('AI returned an empty response');
+                    if (typeof result !== 'string' || !result.trim()) throw new Error('AI returned an empty response. Try again.');
                     return result;
+
                 } catch (err) {
+                    clearTimeout(timeout);
                     lastError = err;
-                    const isTransient = err.message.includes('503') ||
-                        err.message.toLowerCase().includes('overloaded') ||
-                        err.message.toLowerCase().includes('retry in a moment') ||
-                        err.message.toLowerCase().includes('failed to fetch');
+
+                    // AbortController timeout
+                    if (err.name === 'AbortError') {
+                        lastError = new Error('Request timed out after 60 seconds. The AI service may be slow — please retry.');
+                    }
+
+                    const msg = lastError.message.toLowerCase();
+                    const isTransient = msg.includes('failed to fetch') ||
+                        msg.includes('networkerror') ||
+                        msg.includes('timeout') ||
+                        msg.includes('503') ||
+                        msg.includes('overloaded') ||
+                        msg.includes('abort');
 
                     if (isTransient && attempt < maxRetries) {
-                        const delayMs = attempt * 2000;
-                        updateThinkingText(`AI connection paused. Retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries})...`);
+                        const delayMs = Math.min(attempt * 2500, 10000);
+                        updateThinkingText(`Connection issue. Retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries})…`);
                         await new Promise(res => setTimeout(res, delayMs));
                     } else {
-                        throw err;
+                        throw lastError;
                     }
                 }
             }
