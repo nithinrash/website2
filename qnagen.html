@@ -543,6 +543,7 @@
         let cameraFacingMode = 'environment';
         let flashOn = false;
         let generating = false;
+        let activeAbortController = null;
         function renderAttachmentPreviews() {
             const parent = $('#image-preview-container'); parent.replaceChildren();
             parent.classList.toggle('d-none', attachments.length === 0);
@@ -1059,10 +1060,15 @@ ${sourceText ? 'Original source:\n<<<SOURCE>>>\n' + sourceText + '\n<<<END_SOURC
             const topic = splitTopic(raw);
             renderUser((raw || 'Generate from attached material') + (items.length ? ` [${items.length} attachment(s)]` : ''));
             $('#input').value = ''; attachments = []; renderAttachmentPreviews();
+            activeAbortController = new AbortController();
             generating = true; $('#btn-send').disabled = true; $('#btn-attach').disabled = true; $('#btn-camera').disabled = true;
             try { await generate(topic, items); }
             catch (error) { console.error('Generation:', error); clearThinking(); renderError(error.message); }
-            finally { generating = false; $('#btn-send').disabled = false; $('#btn-attach').disabled = false; $('#btn-camera').disabled = false; }
+            finally {
+                generating = false;
+                activeAbortController = null;
+                $('#btn-send').disabled = false; $('#btn-attach').disabled = false; $('#btn-camera').disabled = false;
+            }
         };
         $('#input').onkeydown = event => {
             if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
@@ -1072,10 +1078,15 @@ ${sourceText ? 'Original source:\n<<<SOURCE>>>\n' + sourceText + '\n<<<END_SOURC
         function retryLastGenerate() {
             if (lastGenerationArgs && !generating) {
                 renderThinking('Retrying quiz generation...');
+                activeAbortController = new AbortController();
                 generating = true; $('#btn-send').disabled = true; $('#btn-attach').disabled = true; $('#btn-camera').disabled = true;
                 generate(lastGenerationArgs.topic, lastGenerationArgs.items)
                     .catch(error => { console.error('Generation:', error); clearThinking(); renderError(error.message); })
-                    .finally(() => { generating = false; $('#btn-send').disabled = false; $('#btn-attach').disabled = false; $('#btn-camera').disabled = false; });
+                    .finally(() => {
+                        generating = false;
+                        activeAbortController = null;
+                        $('#btn-send').disabled = false; $('#btn-attach').disabled = false; $('#btn-camera').disabled = false;
+                    });
             }
         }
         window.retryLastGenerate = retryLastGenerate;
