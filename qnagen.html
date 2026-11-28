@@ -230,8 +230,8 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button id="btn-settings" class="btn btn-outline-secondary btn-sm" title="AI Settings (API Key / Model)"><i
-                            class="bi bi-gear-fill"></i></button>
+                    <button id="btn-settings" class="btn btn-outline-secondary btn-sm"
+                        title="AI Settings (API Key / Model)"><i class="bi bi-gear-fill"></i></button>
                     <button id="btn-theme" class="btn btn-outline-secondary btn-sm" title="Toggle Theme"><i
                             class="bi bi-moon-stars-fill"></i></button>
                     <button id="btn-clear-storage" class="btn btn-outline-danger btn-sm"
@@ -385,17 +385,24 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title h6 fw-bold" id="settingsModalLabel"><i class="bi bi-gear-fill me-2 text-primary"></i>Krutrim AI & Proxy Settings</h5>
+                    <h5 class="modal-title h6 fw-bold" id="settingsModalLabel"><i
+                            class="bi bi-gear-fill me-2 text-primary"></i>Krutrim AI & Proxy Settings</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-info small py-2 mb-3">
-                        <i class="bi bi-info-circle-fill me-1"></i> All requests go through a Cloudflare proxy for reliability. Optionally enter your own Krutrim API key below for a dedicated connection (avoids shared rate limits).
+                        <i class="bi bi-info-circle-fill me-1"></i> All requests go through a Cloudflare proxy for
+                        reliability. Optionally enter your own Krutrim API key below for a dedicated connection (avoids
+                        shared rate limits).
                     </div>
                     <div class="mb-3">
-                        <label for="cfg-api-key" class="form-label small fw-bold">Direct Krutrim API Key (Optional)</label>
-                        <input type="password" id="cfg-api-key" class="form-control form-control-sm" placeholder="Enter Krutrim API key...">
-                        <div class="form-text small">Get a key from <a href="https://cloud.olakrutrim.com" target="_blank" rel="noopener">cloud.olakrutrim.com</a>. Saved locally in your browser.</div>
+                        <label for="cfg-api-key" class="form-label small fw-bold">Direct Krutrim API Key
+                            (Optional)</label>
+                        <input type="password" id="cfg-api-key" class="form-control form-control-sm"
+                            placeholder="Enter Krutrim API key...">
+                        <div class="form-text small">Get a key from <a href="https://cloud.olakrutrim.com"
+                                target="_blank" rel="noopener">cloud.olakrutrim.com</a>. Saved locally in your browser.
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="cfg-model" class="form-label small fw-bold">Model</label>
@@ -409,11 +416,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="cfg-proxy-url" class="form-label small fw-bold">Cloudflare Proxy URL</label>
-                        <input type="url" id="cfg-proxy-url" class="form-control form-control-sm" placeholder="https://hurup-groq-proxy.nkrash91.workers.dev">
+                        <input type="url" id="cfg-proxy-url" class="form-control form-control-sm"
+                            placeholder="https://hurup-groq-proxy.nkrash91.workers.dev">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" id="cfg-reset-btn" class="btn btn-sm btn-outline-secondary">Reset to Default</button>
+                    <button type="button" id="cfg-reset-btn" class="btn btn-sm btn-outline-secondary">Reset to
+                        Default</button>
                     <button type="button" id="cfg-save-btn" class="btn btn-sm btn-primary">Save Settings</button>
                 </div>
             </div>
@@ -725,7 +734,7 @@
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers,
-                        signal: controller.signal,
+                        signal: activeAbortController.signal,
                         body: JSON.stringify({
                             model: chosenModel,
                             messages,
@@ -1039,6 +1048,20 @@ ${sourceText ? 'Original source:\n<<<SOURCE>>>\n' + sourceText + '\n<<<END_SOURC
             clearThinking(); renderTable(finalRows); renderJSON(obj);
             showToast('Ready: 16 clue labels checked; 24 unique answers.');
         }
+        function setGeneratingUI(active) {
+            generating = active;
+            $('#btn-send').classList.toggle('d-none', active);
+            $('#btn-stop').classList.toggle('d-none', !active);
+            $('#btn-attach').disabled = active;
+            $('#btn-camera').disabled = active;
+        }
+        function cancelGeneration() {
+            if (activeAbortController) activeAbortController.abort();
+            clearThinking();
+            setGeneratingUI(false);
+            showToast('Generation cancelled.');
+        }
+        window.cancelGeneration = cancelGeneration;
         $('#btn-send').onclick = async () => {
             if (generating) return;
             const raw = $('#input').value.trim();
@@ -1047,11 +1070,13 @@ ${sourceText ? 'Original source:\n<<<SOURCE>>>\n' + sourceText + '\n<<<END_SOURC
             const topic = splitTopic(raw);
             renderUser((raw || 'Generate from attached material') + (items.length ? ` [${items.length} attachment(s)]` : ''));
             $('#input').value = ''; attachments = []; renderAttachmentPreviews();
-            generating = true; $('#btn-send').disabled = true; $('#btn-attach').disabled = true; $('#btn-camera').disabled = true;
+            activeAbortController = new AbortController();
+            setGeneratingUI(true);
             try { await generate(topic, items); }
-            catch (error) { console.error('Generation:', error); clearThinking(); renderError(error.message); }
-            finally { generating = false; $('#btn-send').disabled = false; $('#btn-attach').disabled = false; $('#btn-camera').disabled = false; }
+            catch (error) { console.error('Generation:', error); clearThinking(); if (error.name !== 'AbortError') renderError(error.message); }
+            finally { setGeneratingUI(false); }
         };
+        $('#btn-stop').onclick = cancelGeneration;
         $('#input').onkeydown = event => {
             if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
                 event.preventDefault(); $('#btn-send').click();
