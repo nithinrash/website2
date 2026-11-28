@@ -426,6 +426,8 @@
         /* =================== CONFIG =================== */
         const CLOUDFLARE_AI_URL = 'https://hurup-groq-proxy.nkrash91.workers.dev';
         const MODEL = 'gpt-oss-120b';
+        const AI_REQUEST_TIMEOUT_MS = 180000;
+        const AI_MAX_TOKENS = 4096;
         const STORAGE_KEY = 'HURUP_DEV_OVERRIDE_DATA';
         const TSV_HEADER = '#\tKeyword\tFull Question\tAnswer';
         const $ = selector => document.querySelector(selector);
@@ -717,19 +719,28 @@
             let lastError = null;
 
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+                const requestController = new AbortController();
+                const timeout = setTimeout(() => {
+                    requestController.abort();
+                }, AI_REQUEST_TIMEOUT_MS);
+                const generationSignal = activeAbortController?.signal;
+                const abortRequest = () => requestController.abort();
+                if (generationSignal) {
+                    if (generationSignal.aborted) requestController.abort();
+                    else generationSignal.addEventListener('abort', abortRequest, { once: true });
+                }
 
                 try {
                     const response = await fetch(endpoint, {
                         method: 'POST',
                         headers,
-                        signal: controller.signal,
+                        signal: requestController.signal,
+                        cache: 'no-store',
                         body: JSON.stringify({
                             model: chosenModel,
                             messages,
                             temperature: jsonMode ? 0.15 : 0.35,
-                            max_tokens: 8192
+                            max_tokens: AI_MAX_TOKENS
                         })
                     });
 
@@ -765,9 +776,9 @@
                     clearTimeout(timeout);
                     lastError = err;
 
-                    // AbortController timeout
                     if (err.name === 'AbortError') {
-                        lastError = new Error('Request timed out after 60 seconds. The AI service may be slow — please retry.');
+                        if (generationSignal?.aborted) throw err;
+                        throw new Error(`Request timed out after ${AI_REQUEST_TIMEOUT_MS / 1000} seconds. The AI service may be slow — please retry.`);
                     }
 
                     const msg = lastError.message.toLowerCase();
@@ -785,6 +796,9 @@
                     } else {
                         throw lastError;
                     }
+                } finally {
+                    clearTimeout(timeout);
+                    generationSignal?.removeEventListener('abort', abortRequest);
                 }
             }
             throw lastError;
